@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <title>Mapa de Riesgo de Inundación de Puerto Rico</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <!-- MapLibre GL JS CSS -->
+    <link href="https://unpkg.com/maplibre-gl@4.3.0/dist/maplibre-gl.css" rel="stylesheet" />
+
+    <style>
+        /* Base Styles & Accessibility */
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            font-family: 'Open Sans', 'Helvetica Neue', Arial, Helvetica, sans-serif; /* A modern, readable sans-serif font */
+            color: #333; /* Good contrast for text */
+            overflow: hidden; /* Prevent body scroll, map handles its own scroll */
+        }
+
+        /* Header / Banner */
+        #app-header {
+            background-color: #004d99; /* Dark blue, inspired by PR flag */
+            color: #fff;
+            padding: 15px 20px;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            position: relative;
+            z-index: 10; /* Ensure it's above the map */
+        }
+        #app-header h1 {
+            margin: 0;
+            font-size: 1.8em;
+            margin-bottom: 5px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3); /* Subtle text shadow for readability */
+        }
+        #app-header p {
+            margin: 0;
+            font-size: 1em;
+            opacity: 0.9;
+        }
+
+        /* Map Container */
+        #map {
+            position: absolute;
+            top: 100px; /* Adjust based on header height. Will be dynamic with JS if needed, or static for now */
+            bottom: 0;
+            width: 100%;
+        }
+
+        /* Map Overlay / Legend */
+        .map-overlay {
+            font-size: 0.9em;
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.9); /* Slightly more opaque background */
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4); /* More pronounced shadow */
+            z-index: 5; /* Below header, above map */
+            max-width: 280px; /* Limit width on desktop for better layout */
+        }
+        .map-overlay h3 {
+            margin: 0 0 10px;
+            font-size: 1.15em;
+            color: #004d99; /* Match header color */
+            border-bottom: 1px solid #eee; /* Separator for title */
+            padding-bottom: 5px;
+        }
+        .map-overlay .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .map-overlay .color-box {
+            width: 25px;
+            height: 20px;
+            margin-right: 12px;
+            border: 1px solid rgba(0, 0, 0, 0.2);
+            flex-shrink: 0; /* Prevent shrinking on small screens */
+            border-radius: 3px; /* Slightly rounded corners */
+        }
+        .map-overlay .attribution {
+            font-size: 0.75em;
+            margin-top: 15px;
+            border-top: 1px solid #eee;
+            padding-top: 10px;
+            color: #666;
+        }
+
+        /* Responsive Adjustments (Mobile-First Approach for some elements, Desktop-First with max-width for others) */
+
+        /* General adjustments for smaller screens (up to tablets) */
+        @media (max-width: 768px) {
+            #app-header {
+                padding: 12px 15px;
+            }
+            #app-header h1 {
+                font-size: 1.6em;
+            }
+            #app-header p {
+                font-size: 0.9em;
+            }
+            /* Adjust map top based on reduced header height */
+            #map {
+                top: 85px; /* Approximate smaller header height */
+            }
+            .map-overlay {
+                left: 10px;
+                bottom: 10px;
+                right: 10px; /* Make it almost full width */
+                max-width: calc(100% - 20px); /* Fill available width with padding */
+                font-size: 0.85em;
+                padding: 12px;
+                box-shadow: 0 1px 5px rgba(0, 0, 0, 0.3); /* Lighter shadow on mobile */
+            }
+            .map-overlay .color-box {
+                width: 20px;
+                height: 16px;
+                margin-right: 10px;
+            }
+        }
+
+        /* Adjustments for very small screens (smartphones) */
+        @media (max-width: 480px) {
+            #app-header {
+                padding: 10px 10px;
+            }
+            #app-header h1 {
+                font-size: 1.4em;
+            }
+            #app-header p {
+                font-size: 0.8em;
+            }
+            #map {
+                top: 75px; /* Approximate smallest header height */
+            }
+            .map-overlay {
+                bottom: 5px;
+                left: 5px;
+                right: 5px;
+                max-width: calc(100% - 10px);
+                font-size: 0.75em;
+                padding: 10px;
+            }
+            .map-overlay h3 {
+                font-size: 1em;
+            }
+            .map-overlay .color-box {
+                width: 18px;
+                height: 14px;
+                margin-right: 8px;
+            }
+            .map-overlay .legend-item {
+                margin-bottom: 5px; /* Tighter spacing */
+            }
+        }
+    </style>
+</head>
+<body>
+    <header id="app-header" role="banner">
+        <h1>Mapa de Riesgo de Inundación de Puerto Rico</h1>
+        <p>Identifica áreas propensas a inundaciones para tu seguridad y preparación.</p>
+    </header>
+
+    <div id="map" role="application" aria-label="Mapa interactivo de zonas de riesgo de inundación"></div>
+
+    <!-- Legend Overlay -->
+    <div class="map-overlay" role="complementary" aria-labelledby="legend-heading">
+        <h3 id="legend-heading">Riesgo de Inundación</h3>
+        <div class="legend-item">
+            <div class="color-box" style="background-color: #e61d00;"></div>
+            <span>Alto Riesgo (SFHA - 1% Probabilidad Anual)</span>
+        </div>
+        <div class="legend-item">
+            <div class="color-box" style="background-color: #ffaa00;"></div>
+            <span>Riesgo Moderado (0.2% Probabilidad Anual)</span>
+        </div>
+        <div class="legend-item">
+            <div class="color-box" style="background-color: #66ccff; opacity: 0.2;"></div>
+            <span>Riesgo Mínimo (Fuera de la Llanura de Inundación)</span>
+        </div>
+        <div class="legend-item">
+            <div class="color-box" style="background-color: #808080;"></div>
+            <span>Peligro Indeterminado</span>
+        </div>
+        <div class="attribution">
+            Datos: FEMA NFHL (2021), <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>
+        </div>
+    </div>
+
+
+    <!-- MapLibre GL JS Library -->
+    <script src="https://unpkg.com/maplibre-gl@4.3.0/dist/maplibre-gl.js"></script>
+
+    <script>
+        // Adjust map top position based on header height for better responsiveness
+        // This is a simple JS solution for dynamic header height.
+        // For more complex layouts, CSS flexbox/grid might be preferred for the main layout.
+        function adjustMapTop() {
+            const headerHeight = document.getElementById('app-header').offsetHeight;
+            document.getElementById('map').style.top = headerHeight + 'px';
+        }
+
+        // Run on load and resize
+        window.addEventListener('load', adjustMapTop);
+        window.addEventListener('resize', adjustMapTop);
+
+        const map = new maplibregl.Map({
+            container: 'map', // container ID
+            style: {
+                version: 8,
+                sources: {
+                    osm: {
+                        type: 'raster',
+                        tiles: [
+                            'https://a.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                            'https://b.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                            'https://c.tile.openstreetmap.org/{z}/{x}/{y}.png'
+                        ],
+                        tileSize: 256,
+                        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contribuidores'
+                    }
+                },
+                layers: [
+                    {
+                        id: 'osm-tiles',
+                        type: 'raster',
+                        source: 'osm',
+                        minzoom: 0,
+                        maxzoom: 19
+                    }
+                ]
+            },
+            center: [-66.5901, 18.2208], // starting position [lng, lat] for Puerto Rico
+            zoom: 9 // starting zoom
+        });
+
+        // Add navigation controls (zoom in/out, compass)
+        map.addControl(new maplibregl.NavigationControl(), 'top-right');
+
+        // Add scale control
+        map.addControl(new maplibregl.ScaleControl());
+
+        // Once the map is loaded, add your GeoJSON layers
+        map.on('load', () => {
+            // 1. Add Puerto Rico Municipality GeoJSON
+            map.addSource('municipalities', {
+                type: 'geojson',
+                data: 'data/puerto_rico_municipalities.geojson' // Path to your municipalities GeoJSON
+            });
+
+            map.addLayer({
+                id: 'municipalities-layer',
+                type: 'fill',
+                source: 'municipalities',
+                layout: {},
+                paint: {
+                    'fill-color': '#ccc',
+                    'fill-opacity': 0.1
+                }
+            });
+            map.addLayer({
+                id: 'municipalities-borders',
+                type: 'line',
+                source: 'municipalities',
+                layout: {},
+                paint: {
+                    'line-color': '#000',
+                    'line-width': 1
+                }
+            });
+
+            // Add popups for municipalities (example, customize as per your GeoJSON properties)
+            map.on('click', 'municipalities-layer', (e) => {
+                const properties = e.features[0].properties;
+                new maplibregl.Popup()
+                    .setLngLat(e.lngLat)
+                    .setHTML(`<b>${properties.NAME_OF_MUNICIPALITY || 'Municipio'}</b>`) // Replace with actual property name
+                    .addTo(map);
+            });
+
+            // Change the cursor to a pointer when hovering over the municipalities layer.
+            map.on('mouseenter', 'municipalities-layer', () => {
+                map.getCanvas().style.cursor = 'pointer';
+            });
+
+            // Change the cursor back to default when it leaves.
+            map.on('mouseleave', 'municipalities-layer', () => {
+                map.getCanvas().style.cursor = '';
+            });
+
+
+            // 2. Add Flood Zone GeoJSON with Data-Driven Styling
+            map.addSource('flood-zones', {
+                type: 'geojson',
+                data: 'data/puerto_rico_flood_hazards_simplified.geojson' // Path to your converted FEMA GeoJSON
+            });
+
+            map.addLayer({
+                id: 'flood-zones-fill',
+                type: 'fill',
+                source: 'flood-zones',
+                paint: {
+                    'fill-color': [
+                        'match',
+                        ['get', 'FLD_ZONE'],
+                        ['A', 'AE', 'AH', 'AO', 'AR', 'A99', 'V', 'VE'], '#e61d00', // Alto Riesgo (Rojo)
+                        ['X', 'X500'], '#ffaa00', // Riesgo Moderado (Naranja)
+                        ['D'], '#808080', // Peligro Indeterminado (Gris)
+                        '#66ccff' // Riesgo Mínimo (Azul claro, para X sin sombra)
+                    ],
+                    'fill-opacity': [
+                        'match',
+                        ['get', 'FLD_ZONE'],
+                        ['A', 'AE', 'AH', 'AO', 'AR', 'A99', 'V', 'VE'], 0.6,
+                        ['X', 'X500'], 0.4,
+                        ['D'], 0.4,
+                        0.2 // Minimal risk areas can be very light
+                    ]
+                }
+            });
+
+            map.addLayer({
+                id: 'flood-zones-borders',
+                type: 'line',
+                source: 'flood-zones',
+                paint: {
+                    'line-color': [
+                        'match',
+                        ['get', 'FLD_ZONE'],
+                        ['A', 'AE', 'AH', 'AO', 'AR', 'A99', 'V', 'VE'], '#990000', // Rojo más oscuro
+                        ['X', 'X500'], '#cc8800', // Naranja más oscuro
+                        ['D'], '#555555', // Gris más oscuro
+                        '#006699' // Azul más oscuro
+                    ],
+                    'line-width': 1.5,
+                    'line-opacity': 0.8
+                }
+            });
+
+            // Update popups for flood zones to show more detail in Spanish
+            map.on('click', 'flood-zones-fill', (e) => {
+                const properties = e.features[0].properties;
+                const sfhaText = properties.SFHA_TF === 'T' ? 'Sí (Área Especial de Riesgo de Inundación)' : (properties.SFHA_TF === 'F' ? 'No (Fuera de SFHA)' : 'N/A');
+                new maplibregl.Popup()
+                    .setLngLat(e.lngLat)
+                    .setHTML(`
+                        <b>Zona de Inundación:</b> ${properties.FLD_ZONE || 'N/A'}<br>
+                        <b>Subtipo de Zona:</b> ${properties.ZONE_SUBTY || 'N/A'}<br>
+                        <b>SFHA:</b> ${sfhaText}
+                    `)
+                    .addTo(map);
+            });
+
+            map.on('mouseenter', 'flood-zones-fill', () => {
+                map.getCanvas().style.cursor = 'pointer';
+            });
+            map.on('mouseleave', 'flood-zones-fill', () => {
+                map.getCanvas().style.cursor = '';
+            });
+        });
+    </script>
+</body>
+</html>
