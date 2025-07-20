@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="utf-8" />
-    <title>Mapa de Riesgo de Inundación de Puerto Rico</title>
+    <title>Mapa de Zonas Inundables de Puerto Rico</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <!-- MapLibre GL JS CSS -->
@@ -16,23 +16,26 @@
             padding: 0;
             font-family: 'Open Sans', 'Helvetica Neue', Arial, Helvetica, sans-serif;
             color: #333;
-            overflow: hidden;
+            overflow: hidden; /* Prevent body scroll, map handles its own scroll */
         }
 
-        /* Header / Banner */
+        /* Header / Banner - Ahora incluye la barra de búsqueda */
         #app-header {
-            background-color: #004d99;
+            background-color: #004d99; /* Dark blue, inspired by PR flag */
             color: #fff;
             padding: 15px 20px;
             text-align: center;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
             position: relative;
             z-index: 10;
+            display: flex; /* Use flexbox for vertical stacking */
+            flex-direction: column;
+            align-items: center; /* Center items horizontally */
+            gap: 10px; /* Space between title and search */
         }
         #app-header h1 {
             margin: 0;
             font-size: 1.8em;
-            margin-bottom: 5px;
             text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
         }
         #app-header p {
@@ -41,19 +44,14 @@
             opacity: 0.9;
         }
 
-        /* Search Bar Container */
+        /* Search Bar Container - Ahora dentro del header, sin posicionamiento absoluto aquí */
         .search-container {
-            position: absolute;
-            top: calc(100px + 10px); /* Header height + some margin */
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 10;
             width: 90%;
             max-width: 400px; /* Limit width on desktop */
-            background: rgba(255, 255, 255, 0.95);
+            background: rgba(255, 255, 255, 0.95); /* Slightly transparent background */
             padding: 10px;
             border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 1px 5px rgba(0, 0, 0, 0.2); /* Lighter shadow since it's now embedded */
             display: flex; /* For input and button side-by-side */
             gap: 10px;
             align-items: center;
@@ -65,6 +63,10 @@
             border-radius: 4px;
             font-size: 1em;
             outline: none;
+            color: #333; /* Ensure text color is dark */
+        }
+        .search-container input[type="text"]::placeholder {
+            color: #888;
         }
         .search-container input[type="text"]:focus {
             border-color: #004d99;
@@ -86,7 +88,7 @@
         .search-container .search-status {
             font-size: 0.8em;
             color: #e61d00;
-            margin-top: 5px;
+            margin-top: 5px; /* Separate status from input/button */
             text-align: center;
             width: 100%;
         }
@@ -95,7 +97,8 @@
         /* Map Container */
         #map {
             position: absolute;
-            top: 100px;
+            /* 'top' will be dynamically set by JS based on header height */
+            top: 0;
             bottom: 0;
             width: 100%;
         }
@@ -141,12 +144,13 @@
             color: #666;
         }
 
-        /* Responsive Adjustments (Mobile-First Approach) */
+        /* Responsive Adjustments */
 
         /* General adjustments for smaller screens (up to tablets) */
         @media (max-width: 768px) {
             #app-header {
                 padding: 12px 15px;
+                gap: 8px; /* Slightly less gap on mobile */
             }
             #app-header h1 {
                 font-size: 1.6em;
@@ -154,15 +158,8 @@
             #app-header p {
                 font-size: 0.9em;
             }
-            #map {
-                top: 85px;
-            }
+            /* Map 'top' will be handled by JS */
             .search-container {
-                top: calc(85px + 10px);
-                width: calc(100% - 40px); /* Accounting for 20px padding on each side */
-                left: 20px; /* Align to left */
-                transform: translateX(0); /* Remove transform */
-                max-width: none; /* Remove max-width */
                 padding: 8px;
                 gap: 8px;
             }
@@ -185,9 +182,9 @@
                 margin-right: 10px;
             }
 
-            /* NEW: Hide MapLibre GL JS navigation controls on smaller screens */
-            .maplibregl-ctrl-group.maplibregl-ctrl-top-right {
-                display: none !important; /* Use !important to override default inline styles */
+            /* NEW: Hide ALL MapLibre GL JS controls on smaller screens */
+            .maplibregl-ctrl {
+                display: none !important;
             }
         }
 
@@ -195,6 +192,7 @@
         @media (max-width: 480px) {
             #app-header {
                 padding: 10px 10px;
+                gap: 6px;
             }
             #app-header h1 {
                 font-size: 1.4em;
@@ -202,11 +200,8 @@
             #app-header p {
                 font-size: 0.8em;
             }
-            #map {
-                top: 75px;
-            }
+            /* Map 'top' will be handled by JS */
             .search-container {
-                top: calc(75px + 8px); /* Adjust based on new header height */
                 padding: 6px;
                 gap: 6px;
             }
@@ -237,20 +232,33 @@
                 font-size: 0.7em;
             }
         }
+
+        /* Visually hide content for screen readers only */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border-width: 0;
+        }
     </style>
 </head>
 <body>
     <header id="app-header" role="banner">
         <h1>Mapa de Riesgo de Inundación de Puerto Rico</h1>
         <p>Identifica áreas propensas a inundaciones para tu seguridad y preparación.</p>
-    </header>
 
-    <div class="search-container">
-        <label for="search-input" class="sr-only">Buscar lugar</label>
-        <input type="text" id="search-input" placeholder="Ej: San Juan" aria-label="Introduce el nombre de un lugar o dirección para buscar en el mapa">
-        <button id="search-button">Buscar</button>
-        <div id="search-status" class="search-status" role="status" aria-live="polite"></div>
-    </div>
+        <div class="search-container">
+            <label for="search-input" class="sr-only">Buscar lugar</label>
+            <input type="text" id="search-input" placeholder="Ej: Condominio Plaza del Parque, Caguas" aria-label="Introduce el nombre de un lugar o dirección para buscar en el mapa">
+            <button id="search-button">Buscar</button>
+            <div id="search-status" class="search-status" role="status" aria-live="polite"></div>
+        </div>
+    </header>
 
     <div id="map" role="application" aria-label="Mapa interactivo de zonas de riesgo de inundación"></div>
 
@@ -265,10 +273,7 @@
             <div class="color-box" style="background-color: #ffaa00;"></div>
             <span>Riesgo Moderado (0.2% Probabilidad Anual)</span>
         </div>
-        <div class="legend-item">
-            <div class="color-box" style="background-color: #66ccff; opacity: 0.2;"></div>
-            <span>Riesgo Mínimo (Fuera de la Llanura de Inundación)</span>
-        </div>
+        <!-- REMOVED: "Riesgo Mínimo" entry -->
         <div class="legend-item">
             <div class="color-box" style="background-color: #808080;"></div>
             <span>Peligro Indeterminado</span>
@@ -287,11 +292,7 @@
         function adjustMapTop() {
             const headerHeight = document.getElementById('app-header').offsetHeight;
             document.getElementById('map').style.top = headerHeight + 'px';
-            // Also adjust search bar top based on header height
-            const searchContainer = document.querySelector('.search-container');
-            if (searchContainer) {
-                searchContainer.style.top = (headerHeight + 10) + 'px'; // 10px margin below header
-            }
+            // Search container is now inside the header, so no separate top adjustment needed
         }
 
         window.addEventListener('load', adjustMapTop);
@@ -327,11 +328,9 @@
             zoom: 9 // starting zoom
         });
 
-        // KEEP: MapLibre GL JS navigation controls are added to 'top-right'
-        map.addControl(new maplibregl.NavigationControl(), 'top-right');
-
-        // Add scale control (can keep its default bottom-left if desired, or move)
-        map.addControl(new maplibregl.ScaleControl());
+        // REMOVED: MapLibre GL JS navigation controls (zoom buttons)
+        // REMOVED: MapLibre GL JS scale control
+        // These are now hidden by CSS for all views, as requested.
 
         // Marker for search results
         let searchResultMarker = null;
@@ -452,7 +451,7 @@
             // 2. Add Flood Zone GeoJSON with Data-Driven Styling
             map.addSource('flood-zones', {
                 type: 'geojson',
-                data: 'data/puerto_rico_flood_hazards_simplified.geojson' // Path to your converted FEMA GeoJSON
+                data: 'data/puerto_rico_flood_hazards_simplified.geojson' // Using simplified data
             });
 
             map.addLayer({
@@ -464,17 +463,17 @@
                         'match',
                         ['get', 'FLD_ZONE'],
                         ['A', 'AE', 'AH', 'AO', 'AR', 'A99', 'V', 'VE'], '#e61d00', // Alto Riesgo (Rojo)
-                        ['X', 'X500'], '#ffaa00', // Riesgo Moderado (Naranja)
+                        ['X500'], '#ffaa00', // Riesgo Moderado (Naranja) - Note: 'X' (unshaded) is not here
                         ['D'], '#808080', // Peligro Indeterminado (Gris)
-                        '#66ccff' // Riesgo Mínimo (Azul claro, para X sin sombra)
+                        'rgba(0,0,0,0)' // DEFAULT: Make anything else (like 'X' unshaded) fully transparent
                     ],
                     'fill-opacity': [
                         'match',
                         ['get', 'FLD_ZONE'],
                         ['A', 'AE', 'AH', 'AO', 'AR', 'A99', 'V', 'VE'], 0.6,
-                        ['X', 'X500'], 0.4,
+                        ['X500'], 0.4,
                         ['D'], 0.4,
-                        0.2 // Minimal risk areas can be very light
+                        0 // DEFAULT: Make anything else (like 'X' unshaded) fully transparent
                     ]
                 }
             });
@@ -488,26 +487,37 @@
                         'match',
                         ['get', 'FLD_ZONE'],
                         ['A', 'AE', 'AH', 'AO', 'AR', 'A99', 'V', 'VE'], '#990000', // Rojo más oscuro
-                        ['X', 'X500'], '#cc8800', // Naranja más oscuro
+                        ['X500'], '#cc8800', // Naranja más oscuro
                         ['D'], '#555555', // Gris más oscuro
-                        '#006699' // Azul más oscuro
+                        'rgba(0,0,0,0)' // DEFAULT: Make anything else (like 'X' unshaded) fully transparent
                     ],
                     'line-width': 1.5,
-                    'line-opacity': 0.8
+                    'line-opacity': [
+                        'match',
+                        ['get', 'FLD_ZONE'],
+                        ['A', 'AE', 'AH', 'AO', 'AR', 'A99', 'V', 'VE'], 0.8,
+                        ['X500'], 0.7,
+                        ['D'], 0.7,
+                        0 // DEFAULT: Make anything else (like 'X' unshaded) fully transparent
+                    ]
                 }
             });
 
             map.on('click', 'flood-zones-fill', (e) => {
                 const properties = e.features[0].properties;
                 const sfhaText = properties.SFHA_TF === 'T' ? 'Sí (Área Especial de Riesgo de Inundación)' : (properties.SFHA_TF === 'F' ? 'No (Fuera de SFHA)' : 'N/A');
-                new maplibregl.Popup()
-                    .setLngLat(e.lngLat)
-                    .setHTML(`
-                        <b>Zona de Inundación:</b> ${properties.FLD_ZONE || 'N/A'}<br>
-                        <b>Subtipo de Zona:</b> ${properties.ZONE_SUBTY || 'N/A'}<br>
-                        <b>SFHA:</b> ${sfhaText}
-                    `)
-                    .addTo(map);
+                
+                // Only show popup if it's a zone we're actually displaying
+                if (properties.FLD_ZONE && (['A', 'AE', 'AH', 'AO', 'AR', 'A99', 'V', 'VE', 'X500', 'D'].includes(properties.FLD_ZONE))) {
+                    new maplibregl.Popup()
+                        .setLngLat(e.lngLat)
+                        .setHTML(`
+                            <b>Zona de Inundación:</b> ${properties.FLD_ZONE || 'N/A'}<br>
+                            <b>Subtipo de Zona:</b> ${properties.ZONE_SUBTY || 'N/A'}<br>
+                            <b>SFHA:</b> ${sfhaText}
+                        `)
+                        .addTo(map);
+                }
             });
 
             map.on('mouseenter', 'flood-zones-fill', () => {
