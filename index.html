@@ -336,7 +336,7 @@
             </div>
             <div class="legend-item">
                 <div class="color-box" style="background-color: #008080;"></div>
-                <span><strong>AE</strong> (Alto Riesgo - Inundación por creciente, con nivel base definido)</span>
+                <span><strong>AE</strong>: (Alto Riesgo - Inundación por creciente, con nivel base definido)</span>
             </div>
             <div class="legend-item">
                 <div class="color-box" style="background-color: #FFFF99;"></div>
@@ -400,7 +400,7 @@
                 ]
             },
             center: [-66.35, 18.0], // starting position [lng, lat] for Puerto Rico
-            zoom: 8 // Increased initial zoom
+            zoom: 8 // Increased initial zoom for island view
         });
 
         // Marker for search results
@@ -611,11 +611,26 @@
                 map.setLayoutProperty('flood-zones-borders', 'visibility', visibility);
             });
 
-            // Toggle Legend Details Visibility
+            // Toggle Legend Details Visibility (with initial state for mobile)
             const legendTitleBar = document.querySelector('.legend-title-bar');
             const legendDetailsContainer = document.getElementById('legend-details-container');
             const toggleIcon = legendTitleBar.querySelector('.toggle-icon');
 
+            // Set initial state based on screen width
+            const isMobileView = window.innerWidth <= 768; // Matches your media query breakpoint
+
+            if (isMobileView) {
+                legendDetailsContainer.classList.add('collapsed');
+                toggleIcon.classList.add('rotated'); // Rotate down arrow
+                legendTitleBar.setAttribute('aria-expanded', 'false'); // Indicate collapsed state
+            } else {
+                // Ensure desktop default is open
+                legendDetailsContainer.classList.remove('collapsed');
+                toggleIcon.classList.remove('rotated'); // Up arrow
+                legendTitleBar.setAttribute('aria-expanded', 'true'); // Indicate expanded state
+            }
+
+            // Event listener for toggling (works for both initial states)
             legendTitleBar.addEventListener('click', () => {
                 const isCollapsed = legendDetailsContainer.classList.toggle('collapsed');
                 toggleIcon.classList.toggle('rotated');
