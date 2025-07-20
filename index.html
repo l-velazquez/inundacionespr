@@ -170,7 +170,6 @@
                 font-size: 0.9em;
                 padding: 6px 10px;
             }
-
             .map-overlay {
                 left: 10px;
                 bottom: 10px;
@@ -184,6 +183,11 @@
                 width: 20px;
                 height: 16px;
                 margin-right: 10px;
+            }
+
+            /* NEW: Hide MapLibre GL JS navigation controls on smaller screens */
+            .maplibregl-ctrl-group.maplibregl-ctrl-top-right {
+                display: none !important; /* Use !important to override default inline styles */
             }
         }
 
@@ -243,7 +247,7 @@
 
     <div class="search-container">
         <label for="search-input" class="sr-only">Buscar lugar</label>
-        <input type="text" id="search-input" placeholder="Ej: Cupey" aria-label="Introduce el nombre de un lugar o dirección para buscar en el mapa">
+        <input type="text" id="search-input" placeholder="Ej: Condominio Plaza del Parque, Caguas" aria-label="Introduce el nombre de un lugar o dirección para buscar en el mapa">
         <button id="search-button">Buscar</button>
         <div id="search-status" class="search-status" role="status" aria-live="polite"></div>
     </div>
@@ -323,7 +327,10 @@
             zoom: 9 // starting zoom
         });
 
+        // KEEP: MapLibre GL JS navigation controls are added to 'top-right'
         map.addControl(new maplibregl.NavigationControl(), 'top-right');
+
+        // Add scale control (can keep its default bottom-left if desired, or move)
         map.addControl(new maplibregl.ScaleControl());
 
         // Marker for search results
@@ -350,9 +357,6 @@
 
             searchStatus.textContent = 'Buscando...';
             // Construct Nominatim API URL (with 'Puerto Rico' added for better results)
-            // Nominatim Usage Policy: https://operations.osmfoundation.org/policies/nominatim/
-            // Always add a distinct user-agent or referer in a real app if possible.
-            // Limiting results to PR bounding box can improve accuracy.
             const bboxPR = '-67.3,-67.9,17.9,18.5'; // Approx bounds: min_lon,min_lat,max_lon,max_lat
             const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}, Puerto Rico&format=json&limit=1&bounded=1&viewbox=${bboxPR}`;
 
@@ -369,19 +373,19 @@
                     const lon = parseFloat(result.lon);
 
                     searchStatus.textContent = `Encontrado: ${result.display_name}`;
-                    
+
                     // Fly to the location
                     map.flyTo({
                         center: [lon, lat],
                         zoom: 15, // Zoom in closer
-                        essential: true // This ensures the animation doesn't get interrupted
+                        essential: true
                     });
 
                     // Add/move marker
                     if (searchResultMarker) {
                         searchResultMarker.setLngLat([lon, lat]);
                     } else {
-                        searchResultMarker = new maplibregl.Marker({ color: '#004d99' }) // Dark blue marker
+                        searchResultMarker = new maplibregl.Marker({ color: '#004d99' })
                             .setLngLat([lon, lat])
                             .addTo(map);
                     }
@@ -402,7 +406,6 @@
         }
 
         map.on('load', () => {
-            // ... (municipality layers and flood zone layers, as before) ...
             // 1. Add Puerto Rico Municipality GeoJSON
             map.addSource('municipalities', {
                 type: 'geojson',
