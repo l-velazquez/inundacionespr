@@ -14,26 +14,26 @@
             height: 100%;
             margin: 0;
             padding: 0;
-            font-family: 'Open Sans', 'Helvetica Neue', Arial, Helvetica, sans-serif; /* A modern, readable sans-serif font */
-            color: #333; /* Good contrast for text */
-            overflow: hidden; /* Prevent body scroll, map handles its own scroll */
+            font-family: 'Open Sans', 'Helvetica Neue', Arial, Helvetica, sans-serif;
+            color: #333;
+            overflow: hidden;
         }
 
         /* Header / Banner */
         #app-header {
-            background-color: #004d99; /* Dark blue, inspired by PR flag */
+            background-color: #004d99;
             color: #fff;
             padding: 15px 20px;
             text-align: center;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
             position: relative;
-            z-index: 10; /* Ensure it's above the map */
+            z-index: 10;
         }
         #app-header h1 {
             margin: 0;
             font-size: 1.8em;
             margin-bottom: 5px;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.3); /* Subtle text shadow for readability */
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
         }
         #app-header p {
             margin: 0;
@@ -41,10 +41,61 @@
             opacity: 0.9;
         }
 
+        /* Search Bar Container */
+        .search-container {
+            position: absolute;
+            top: calc(100px + 10px); /* Header height + some margin */
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            width: 90%;
+            max-width: 400px; /* Limit width on desktop */
+            background: rgba(255, 255, 255, 0.95);
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            display: flex; /* For input and button side-by-side */
+            gap: 10px;
+            align-items: center;
+        }
+        .search-container input[type="text"] {
+            flex-grow: 1; /* Input takes available space */
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1em;
+            outline: none;
+        }
+        .search-container input[type="text"]:focus {
+            border-color: #004d99;
+            box-shadow: 0 0 0 2px rgba(0, 77, 153, 0.2);
+        }
+        .search-container button {
+            padding: 8px 15px;
+            background-color: #004d99;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        .search-container button:hover {
+            background-color: #003366;
+        }
+        .search-container .search-status {
+            font-size: 0.8em;
+            color: #e61d00;
+            margin-top: 5px;
+            text-align: center;
+            width: 100%;
+        }
+
+
         /* Map Container */
         #map {
             position: absolute;
-            top: 100px; /* Adjust based on header height. Will be dynamic with JS if needed, or static for now */
+            top: 100px;
             bottom: 0;
             width: 100%;
         }
@@ -55,18 +106,18 @@
             position: absolute;
             bottom: 20px;
             left: 20px;
-            background: rgba(255, 255, 255, 0.9); /* Slightly more opaque background */
+            background: rgba(255, 255, 255, 0.9);
             padding: 15px;
             border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4); /* More pronounced shadow */
-            z-index: 5; /* Below header, above map */
-            max-width: 280px; /* Limit width on desktop for better layout */
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+            z-index: 5;
+            max-width: 280px;
         }
         .map-overlay h3 {
             margin: 0 0 10px;
             font-size: 1.15em;
-            color: #004d99; /* Match header color */
-            border-bottom: 1px solid #eee; /* Separator for title */
+            color: #004d99;
+            border-bottom: 1px solid #eee;
             padding-bottom: 5px;
         }
         .map-overlay .legend-item {
@@ -79,8 +130,8 @@
             height: 20px;
             margin-right: 12px;
             border: 1px solid rgba(0, 0, 0, 0.2);
-            flex-shrink: 0; /* Prevent shrinking on small screens */
-            border-radius: 3px; /* Slightly rounded corners */
+            flex-shrink: 0;
+            border-radius: 3px;
         }
         .map-overlay .attribution {
             font-size: 0.75em;
@@ -90,7 +141,7 @@
             color: #666;
         }
 
-        /* Responsive Adjustments (Mobile-First Approach for some elements, Desktop-First with max-width for others) */
+        /* Responsive Adjustments (Mobile-First Approach) */
 
         /* General adjustments for smaller screens (up to tablets) */
         @media (max-width: 768px) {
@@ -103,18 +154,31 @@
             #app-header p {
                 font-size: 0.9em;
             }
-            /* Adjust map top based on reduced header height */
             #map {
-                top: 85px; /* Approximate smaller header height */
+                top: 85px;
             }
+            .search-container {
+                top: calc(85px + 10px);
+                width: calc(100% - 40px); /* Accounting for 20px padding on each side */
+                left: 20px; /* Align to left */
+                transform: translateX(0); /* Remove transform */
+                max-width: none; /* Remove max-width */
+                padding: 8px;
+                gap: 8px;
+            }
+            .search-container input, .search-container button {
+                font-size: 0.9em;
+                padding: 6px 10px;
+            }
+
             .map-overlay {
                 left: 10px;
                 bottom: 10px;
-                right: 10px; /* Make it almost full width */
-                max-width: calc(100% - 20px); /* Fill available width with padding */
+                right: 10px;
+                max-width: calc(100% - 20px);
                 font-size: 0.85em;
                 padding: 12px;
-                box-shadow: 0 1px 5px rgba(0, 0, 0, 0.3); /* Lighter shadow on mobile */
+                box-shadow: 0 1px 5px rgba(0, 0, 0, 0.3);
             }
             .map-overlay .color-box {
                 width: 20px;
@@ -135,7 +199,16 @@
                 font-size: 0.8em;
             }
             #map {
-                top: 75px; /* Approximate smallest header height */
+                top: 75px;
+            }
+            .search-container {
+                top: calc(75px + 8px); /* Adjust based on new header height */
+                padding: 6px;
+                gap: 6px;
+            }
+            .search-container input, .search-container button {
+                font-size: 0.8em;
+                padding: 5px 8px;
             }
             .map-overlay {
                 bottom: 5px;
@@ -154,7 +227,10 @@
                 margin-right: 8px;
             }
             .map-overlay .legend-item {
-                margin-bottom: 5px; /* Tighter spacing */
+                margin-bottom: 5px;
+            }
+            .search-container .search-status {
+                font-size: 0.7em;
             }
         }
     </style>
@@ -164,6 +240,13 @@
         <h1>Mapa de Riesgo de Inundación de Puerto Rico</h1>
         <p>Identifica áreas propensas a inundaciones para tu seguridad y preparación.</p>
     </header>
+
+    <div class="search-container">
+        <label for="search-input" class="sr-only">Buscar lugar</label>
+        <input type="text" id="search-input" placeholder="Ej: Cupey" aria-label="Introduce el nombre de un lugar o dirección para buscar en el mapa">
+        <button id="search-button">Buscar</button>
+        <div id="search-status" class="search-status" role="status" aria-live="polite"></div>
+    </div>
 
     <div id="map" role="application" aria-label="Mapa interactivo de zonas de riesgo de inundación"></div>
 
@@ -197,14 +280,16 @@
 
     <script>
         // Adjust map top position based on header height for better responsiveness
-        // This is a simple JS solution for dynamic header height.
-        // For more complex layouts, CSS flexbox/grid might be preferred for the main layout.
         function adjustMapTop() {
             const headerHeight = document.getElementById('app-header').offsetHeight;
             document.getElementById('map').style.top = headerHeight + 'px';
+            // Also adjust search bar top based on header height
+            const searchContainer = document.querySelector('.search-container');
+            if (searchContainer) {
+                searchContainer.style.top = (headerHeight + 10) + 'px'; // 10px margin below header
+            }
         }
 
-        // Run on load and resize
         window.addEventListener('load', adjustMapTop);
         window.addEventListener('resize', adjustMapTop);
 
@@ -238,18 +323,90 @@
             zoom: 9 // starting zoom
         });
 
-        // Add navigation controls (zoom in/out, compass)
         map.addControl(new maplibregl.NavigationControl(), 'top-right');
-
-        // Add scale control
         map.addControl(new maplibregl.ScaleControl());
 
-        // Once the map is loaded, add your GeoJSON layers
+        // Marker for search results
+        let searchResultMarker = null;
+
+        // Search functionality
+        const searchInput = document.getElementById('search-input');
+        const searchButton = document.getElementById('search-button');
+        const searchStatus = document.getElementById('search-status');
+
+        searchButton.addEventListener('click', performSearch);
+        searchInput.addEventListener('keypress', (event) => {
+            if (event.key === 'Enter') {
+                performSearch();
+            }
+        });
+
+        async function performSearch() {
+            const query = searchInput.value.trim();
+            if (!query) {
+                searchStatus.textContent = 'Por favor, introduce un lugar.';
+                return;
+            }
+
+            searchStatus.textContent = 'Buscando...';
+            // Construct Nominatim API URL (with 'Puerto Rico' added for better results)
+            // Nominatim Usage Policy: https://operations.osmfoundation.org/policies/nominatim/
+            // Always add a distinct user-agent or referer in a real app if possible.
+            // Limiting results to PR bounding box can improve accuracy.
+            const bboxPR = '-67.3,-67.9,17.9,18.5'; // Approx bounds: min_lon,min_lat,max_lon,max_lat
+            const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}, Puerto Rico&format=json&limit=1&bounded=1&viewbox=${bboxPR}`;
+
+            try {
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+
+                if (data && data.length > 0) {
+                    const result = data[0];
+                    const lat = parseFloat(result.lat);
+                    const lon = parseFloat(result.lon);
+
+                    searchStatus.textContent = `Encontrado: ${result.display_name}`;
+                    
+                    // Fly to the location
+                    map.flyTo({
+                        center: [lon, lat],
+                        zoom: 15, // Zoom in closer
+                        essential: true // This ensures the animation doesn't get interrupted
+                    });
+
+                    // Add/move marker
+                    if (searchResultMarker) {
+                        searchResultMarker.setLngLat([lon, lat]);
+                    } else {
+                        searchResultMarker = new maplibregl.Marker({ color: '#004d99' }) // Dark blue marker
+                            .setLngLat([lon, lat])
+                            .addTo(map);
+                    }
+                    searchResultMarker.setPopup(new maplibregl.Popup().setHTML(`<b>${result.display_name}</b>`));
+                    searchResultMarker.getPopup().addTo(map);
+
+                } else {
+                    searchStatus.textContent = 'No se encontraron resultados. Intenta con un nombre más específico o diferente.';
+                    if (searchResultMarker) {
+                        searchResultMarker.remove();
+                        searchResultMarker = null;
+                    }
+                }
+            } catch (error) {
+                searchStatus.textContent = `Error en la búsqueda: ${error.message}`;
+                console.error('Geocoding error:', error);
+            }
+        }
+
         map.on('load', () => {
+            // ... (municipality layers and flood zone layers, as before) ...
             // 1. Add Puerto Rico Municipality GeoJSON
             map.addSource('municipalities', {
                 type: 'geojson',
-                data: 'data/puerto_rico_municipalities.geojson' // Path to your municipalities GeoJSON
+                data: 'data/puerto_rico_municipalities.geojson'
             });
 
             map.addLayer({
@@ -273,21 +430,17 @@
                 }
             });
 
-            // Add popups for municipalities (example, customize as per your GeoJSON properties)
             map.on('click', 'municipalities-layer', (e) => {
                 const properties = e.features[0].properties;
                 new maplibregl.Popup()
                     .setLngLat(e.lngLat)
-                    .setHTML(`<b>${properties.NAME_OF_MUNICIPALITY || 'Municipio'}</b>`) // Replace with actual property name
+                    .setHTML(`<b>${properties.NAME_OF_MUNICIPALITY || 'Municipio'}</b>`)
                     .addTo(map);
             });
 
-            // Change the cursor to a pointer when hovering over the municipalities layer.
             map.on('mouseenter', 'municipalities-layer', () => {
                 map.getCanvas().style.cursor = 'pointer';
             });
-
-            // Change the cursor back to default when it leaves.
             map.on('mouseleave', 'municipalities-layer', () => {
                 map.getCanvas().style.cursor = '';
             });
@@ -341,7 +494,6 @@
                 }
             });
 
-            // Update popups for flood zones to show more detail in Spanish
             map.on('click', 'flood-zones-fill', (e) => {
                 const properties = e.features[0].properties;
                 const sfhaText = properties.SFHA_TF === 'T' ? 'Sí (Área Especial de Riesgo de Inundación)' : (properties.SFHA_TF === 'F' ? 'No (Fuera de SFHA)' : 'N/A');
