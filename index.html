@@ -38,6 +38,9 @@
             font-size: 1.8em;
             text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
         }
+        #app-header h1, #app-header p {
+            max-width: 95%; /* Ensure text doesn't overflow header on very small screens */
+        }
         #app-header p {
             margin: 0;
             font-size: 1em;
@@ -53,8 +56,10 @@
             border-radius: 8px;
             box-shadow: 0 1px 5px rgba(0, 0, 0, 0.2); /* Lighter shadow since it's now embedded */
             display: flex; /* For input and button side-by-side */
-            gap: 10px;
-            align-items: center;
+            flex-wrap: wrap; /* NEW: Allow items to wrap to the next line */
+            gap: 10px; /* Space between flex items */
+            align-items: center; /* Vertically align input/button */
+            justify-content: center; /* Center input/button if space allows */
         }
         .search-container input[type="text"] {
             flex-grow: 1; /* Input takes available space */
@@ -85,12 +90,14 @@
         .search-container button:hover {
             background-color: #003366;
         }
+        /* NEW: Make search-status always take full width within flex container */
         .search-container .search-status {
             font-size: 0.8em;
             color: #e61d00;
-            margin-top: 5px; /* Separate status from input/button */
+            margin-top: 5px; /* Space above status message */
             text-align: center;
-            width: 100%;
+            width: 100%; /* Forces it to a new line and center content */
+            order: 3; /* Ensure it appears after input and button */
         }
 
 
@@ -150,7 +157,7 @@
         @media (max-width: 768px) {
             #app-header {
                 padding: 12px 15px;
-                gap: 8px; /* Slightly less gap on mobile */
+                gap: 8px;
             }
             #app-header h1 {
                 font-size: 1.6em;
@@ -158,7 +165,6 @@
             #app-header p {
                 font-size: 0.9em;
             }
-            /* Map 'top' will be handled by JS */
             .search-container {
                 padding: 8px;
                 gap: 8px;
@@ -182,7 +188,7 @@
                 margin-right: 10px;
             }
 
-            /* NEW: Hide ALL MapLibre GL JS controls on smaller screens */
+            /* Hide ALL MapLibre GL JS controls on smaller screens */
             .maplibregl-ctrl {
                 display: none !important;
             }
@@ -200,7 +206,6 @@
             #app-header p {
                 font-size: 0.8em;
             }
-            /* Map 'top' will be handled by JS */
             .search-container {
                 padding: 6px;
                 gap: 6px;
@@ -269,10 +274,10 @@
             <div class="color-box" style="background-color: #e61d00;"></div>
             <span>Alto Riesgo (SFHA - 1% Probabilidad Anual)</span>
         </div>
-        <div class="legend-item">
+        <!-- <div class="legend-item">
             <div class="color-box" style="background-color: #ffaa00;"></div>
             <span>Riesgo Moderado (0.2% Probabilidad Anual)</span>
-        </div>
+        </div> -->
         <!-- REMOVED: "Riesgo Mínimo" entry -->
         <div class="legend-item">
             <div class="color-box" style="background-color: #808080;"></div>
@@ -506,7 +511,7 @@
             map.on('click', 'flood-zones-fill', (e) => {
                 const properties = e.features[0].properties;
                 const sfhaText = properties.SFHA_TF === 'T' ? 'Sí (Área Especial de Riesgo de Inundación)' : (properties.SFHA_TF === 'F' ? 'No (Fuera de SFHA)' : 'N/A');
-                
+
                 // Only show popup if it's a zone we're actually displaying
                 if (properties.FLD_ZONE && (['A', 'AE', 'AH', 'AO', 'AR', 'A99', 'V', 'VE', 'X500', 'D'].includes(properties.FLD_ZONE))) {
                     new maplibregl.Popup()
