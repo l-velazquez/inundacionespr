@@ -1,642 +1,761 @@
 <!DOCTYPE html>
 <html lang="es">
-<head>
+  <head>
     <meta charset="utf-8" />
     <title>Mapa de Zonas Inundables de Puerto Rico</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <!-- MapLibre GL JS CSS -->
-    <link href="https://unpkg.com/maplibre-gl@4.3.0/dist/maplibre-gl.css" rel="stylesheet" />
+    <link
+      href="https://unpkg.com/maplibre-gl@4.3.0/dist/maplibre-gl.css"
+      rel="stylesheet"
+    />
 
     <style>
-        /* Base Styles & Accessibility */
-        html, body {
-            height: 100%;
-            margin: 0;
-            padding: 0;
-            font-family: 'Open Sans', 'Helvetica Neue', Arial, Helvetica, sans-serif;
-            color: #333;
-            overflow: hidden; /* Prevent body scroll, map handles its own scroll */
-        }
+      /* Base Styles & Accessibility */
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        font-family: "Open Sans", "Helvetica Neue", Arial, Helvetica, sans-serif;
+        color: #333;
+        overflow: hidden; /* Prevent body scroll, map handles its own scroll */
+      }
 
-        /* Header / Banner - Ahora incluye la barra de búsqueda */
+      /* Header / Banner - Ahora incluye la barra de búsqueda */
+      #app-header {
+        background-color: #002e74; /* Dark blue, inspired by PR flag */
+        color: #e2e1dd;
+        padding: 15px 20px;
+        text-align: center;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        position: relative;
+        z-index: 10;
+        display: flex; /* Use flexbox for vertical stacking */
+        flex-direction: column;
+        align-items: center; /* Center items horizontally */
+        gap: 10px; /* Space between title and search */
+      }
+      #app-header h1 {
+        margin: 0;
+        font-size: 1.8em;
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+      }
+      #app-header h1,
+      #app-header p {
+        max-width: 95%; /* Ensure text doesn't overflow header on very small screens */
+      }
+      #app-header p {
+        margin: 0;
+        font-size: 1em;
+        opacity: 0.9;
+      }
+
+      /* Search Bar Container - Ahora dentro del header, sin posicionamiento absoluto aquí */
+      .search-container {
+        width: 90%;
+        max-width: 400px; /* Limit width on desktop */
+        background: rgba(
+          255,
+          255,
+          255,
+          0.95
+        ); /* Slightly transparent background */
+        padding: 10px;
+        border-radius: 8px;
+        box-shadow: 0 1px 5px rgba(0, 0, 0, 0.2); /* Lighter shadow since it's now embedded */
+        display: flex; /* For input and button side-by-side */
+        flex-wrap: wrap; /* Allow items to wrap to the next line */
+        gap: 10px; /* Space between flex items */
+        align-items: center; /* Vertically align input/button */
+        justify-content: center; /* Center input/button if space allows */
+      }
+      .search-container input[type="text"] {
+        flex-grow: 1; /* Input takes available space */
+        padding: 8px 12px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 1em;
+        outline: none;
+        color: #333; /* Ensure text color is dark */
+      }
+      .search-container input[type="text"]::placeholder {
+        color: #888;
+      }
+      .search-container input[type="text"]:focus {
+        border-color: #005c99;
+        box-shadow: 0 0 0 2px rgba(0, 77, 153, 0.2);
+      }
+      .search-container button {
+        padding: 8px 15px;
+        background-color: #004d99;
+        color: #fff;
+        border: none;
+        border-radius: 4px;
+        font-size: 1em;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+      }
+      .search-container button:hover {
+        background-color: #003366;
+      }
+      /* Make search-status always take full width within flex container */
+      .search-container .search-status {
+        font-size: 0.8em;
+        color: #e61d00;
+        margin-top: 5px; /* Space above status message */
+        text-align: center;
+        width: 100%; /* Forces it to a new line and center content */
+        order: 3; /* Ensure it appears after input and button */
+      }
+
+      /* Map Container */
+      #map {
+        position: absolute;
+        /* 'top' will be dynamically set by JS based on header height */
+        top: 0;
+        bottom: 0;
+        width: 100%;
+      }
+
+      /* Map Overlay / Legend */
+      .map-overlay {
+        font-size: 0.9em;
+        position: absolute;
+        bottom: 20px;
+        left: 20px;
+        background: rgba(255, 255, 255, 0.9);
+        padding: 15px;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+        z-index: 5;
+        max-width: 380px; /* Increased max-width for longer text */
+      }
+      /* Legend Title Bar (clickable header) */
+      .legend-title-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between; /* Puts title and icon at ends */
+        margin-bottom: 10px;
+        font-size: 1.15em;
+        color: #005c99;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 5px;
+        cursor: pointer;
+        user-select: none; /* Prevent text selection on click */
+      }
+      .legend-title-bar:hover {
+        opacity: 0.8;
+      }
+      .legend-title-bar h3 {
+        margin: 0; /* Override default h3 margin */
+        flex-grow: 1; /* Allow h3 to take space */
+        text-align: left;
+      }
+      .toggle-icon {
+        margin-left: 10px;
+        font-size: 1.2em;
+        transition: transform 0.2s ease-out;
+      }
+      .toggle-icon.rotated {
+        transform: rotate(-180deg);
+      }
+
+      /* Legend Details Container (collapsible content) */
+      .legend-details-container {
+        max-height: 500px; /* Initial height for expanded state (can be auto/larger) */
+        overflow: hidden;
+        transition: max-height 0.3s ease-out; /* Smooth transition */
+      }
+      .legend-details-container.collapsed {
+        max-height: 0;
+      }
+
+      .map-overlay .legend-item {
+        display: flex;
+        align-items: flex-start; /* Align items to top for multi-line text */
+        margin-bottom: 8px;
+      }
+      .map-overlay .color-box {
+        width: 25px;
+        height: 20px;
+        margin-right: 12px;
+        border: 1px solid rgba(0, 0, 0, 0.2);
+        flex-shrink: 0;
+        border-radius: 3px;
+      }
+      .map-overlay .legend-item span {
+        line-height: 1.3; /* Adjust line height for readability */
+      }
+      .map-overlay .attribution {
+        font-size: 0.75em;
+        margin-top: 15px;
+        border-top: 1px solid #eee;
+        padding-top: 10px;
+        color: #666;
+      }
+
+      /* Responsive Adjustments */
+
+      /* General adjustments for smaller screens (up to tablets) */
+      @media (max-width: 768px) {
         #app-header {
-            background-color: #002e74; /* Dark blue, inspired by PR flag */
-            color: #e2e1dd;
-            padding: 15px 20px;
-            text-align: center;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-            position: relative;
-            z-index: 10;
-            display: flex; /* Use flexbox for vertical stacking */
-            flex-direction: column;
-            align-items: center; /* Center items horizontally */
-            gap: 10px; /* Space between title and search */
+          padding: 12px 15px;
+          gap: 8px;
         }
         #app-header h1 {
-            margin: 0;
-            font-size: 1.8em;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
-        }
-        #app-header h1, #app-header p {
-            max-width: 95%; /* Ensure text doesn't overflow header on very small screens */
+          font-size: 1.6em;
         }
         #app-header p {
-            margin: 0;
-            font-size: 1em;
-            opacity: 0.9;
+          font-size: 0.9em;
         }
-
-        /* Search Bar Container - Ahora dentro del header, sin posicionamiento absoluto aquí */
         .search-container {
-            width: 90%;
-            max-width: 400px; /* Limit width on desktop */
-            background: rgba(255, 255, 255, 0.95); /* Slightly transparent background */
-            padding: 10px;
-            border-radius: 8px;
-            box-shadow: 0 1px 5px rgba(0, 0, 0, 0.2); /* Lighter shadow since it's now embedded */
-            display: flex; /* For input and button side-by-side */
-            flex-wrap: wrap; /* Allow items to wrap to the next line */
-            gap: 10px; /* Space between flex items */
-            align-items: center; /* Vertically align input/button */
-            justify-content: center; /* Center input/button if space allows */
+          padding: 8px;
+          gap: 8px;
         }
-        .search-container input[type="text"] {
-            flex-grow: 1; /* Input takes available space */
-            padding: 8px 12px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 1em;
-            outline: none;
-            color: #333; /* Ensure text color is dark */
-        }
-        .search-container input[type="text"]::placeholder {
-            color: #888;
-        }
-        .search-container input[type="text"]:focus {
-            border-color: #005c99;
-            box-shadow: 0 0 0 2px rgba(0, 77, 153, 0.2);
-        }
+        .search-container input,
         .search-container button {
-            padding: 8px 15px;
-            background-color: #004d99;
-            color: #fff;
-            border: none;
-            border-radius: 4px;
-            font-size: 1em;
-            cursor: pointer;
-            transition: background-color 0.2s ease;
+          font-size: 0.9em;
+          padding: 6px 10px;
         }
-        .search-container button:hover {
-            background-color: #003366;
-        }
-        /* Make search-status always take full width within flex container */
-        .search-container .search-status {
-            font-size: 0.8em;
-            color: #e61d00;
-            margin-top: 5px; /* Space above status message */
-            text-align: center;
-            width: 100%; /* Forces it to a new line and center content */
-            order: 3; /* Ensure it appears after input and button */
-        }
-
-
-        /* Map Container */
-        #map {
-            position: absolute;
-            /* 'top' will be dynamically set by JS based on header height */
-            top: 0;
-            bottom: 0;
-            width: 100%;
-        }
-
-        /* Map Overlay / Legend */
         .map-overlay {
-            font-size: 0.9em;
-            position: absolute;
-            bottom: 20px;
-            left: 20px;
-            background: rgba(255, 255, 255, 0.9);
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
-            z-index: 5;
-            max-width: 380px; /* Increased max-width for longer text */
-        }
-        /* Legend Title Bar (clickable header) */
-        .legend-title-bar {
-            display: flex;
-            align-items: center;
-            justify-content: space-between; /* Puts title and icon at ends */
-            margin-bottom: 10px;
-            font-size: 1.15em;
-            color: #005c99;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 5px;
-            cursor: pointer;
-            user-select: none; /* Prevent text selection on click */
-        }
-        .legend-title-bar:hover {
-            opacity: 0.8;
-        }
-        .legend-title-bar h3 {
-            margin: 0; /* Override default h3 margin */
-            flex-grow: 1; /* Allow h3 to take space */
-            text-align: left;
-        }
-        .toggle-icon {
-            margin-left: 10px;
-            font-size: 1.2em;
-            transition: transform 0.2s ease-out;
-        }
-        .toggle-icon.rotated {
-            transform: rotate(-180deg);
-        }
-
-        /* Legend Details Container (collapsible content) */
-        .legend-details-container {
-            max-height: 500px; /* Initial height for expanded state (can be auto/larger) */
-            overflow: hidden;
-            transition: max-height 0.3s ease-out; /* Smooth transition */
-        }
-        .legend-details-container.collapsed {
-            max-height: 0;
-        }
-
-        .map-overlay .legend-item {
-            display: flex;
-            align-items: flex-start; /* Align items to top for multi-line text */
-            margin-bottom: 8px;
+          left: 10px;
+          bottom: 10px;
+          right: 10px;
+          max-width: calc(100% - 20px);
+          font-size: 0.85em;
+          padding: 12px;
+          box-shadow: 0 1px 5px rgba(0, 0, 0, 0.3);
         }
         .map-overlay .color-box {
-            width: 25px;
-            height: 20px;
-            margin-right: 12px;
-            border: 1px solid rgba(0, 0, 0, 0.2);
-            flex-shrink: 0;
-            border-radius: 3px;
-        }
-        .map-overlay .legend-item span {
-            line-height: 1.3; /* Adjust line height for readability */
-        }
-        .map-overlay .attribution {
-            font-size: 0.75em;
-            margin-top: 15px;
-            border-top: 1px solid #eee;
-            padding-top: 10px;
-            color: #666;
+          width: 20px;
+          height: 16px;
+          margin-right: 10px;
         }
 
-        /* Responsive Adjustments */
-
-        /* General adjustments for smaller screens (up to tablets) */
-        @media (max-width: 768px) {
-            #app-header {
-                padding: 12px 15px;
-                gap: 8px;
-            }
-            #app-header h1 {
-                font-size: 1.6em;
-            }
-            #app-header p {
-                font-size: 0.9em;
-            }
-            .search-container {
-                padding: 8px;
-                gap: 8px;
-            }
-            .search-container input, .search-container button {
-                font-size: 0.9em;
-                padding: 6px 10px;
-            }
-            .map-overlay {
-                left: 10px;
-                bottom: 10px;
-                right: 10px;
-                max-width: calc(100% - 20px);
-                font-size: 0.85em;
-                padding: 12px;
-                box-shadow: 0 1px 5px rgba(0, 0, 0, 0.3);
-            }
-            .map-overlay .color-box {
-                width: 20px;
-                height: 16px;
-                margin-right: 10px;
-            }
-
-            /* Hide ALL MapLibre GL JS controls on smaller screens */
-            .maplibregl-ctrl {
-                display: none !important;
-            }
+        /* Hide ALL MapLibre GL JS controls on smaller screens */
+        .maplibregl-ctrl {
+          display: none !important;
         }
+      }
 
-        /* Adjustments for very small screens (smartphones) */
-        @media (max-width: 480px) {
-            #app-header {
-                padding: 10px 10px;
-                gap: 6px;
-            }
-            #app-header h1 {
-                font-size: 1.4em;
-            }
-            #app-header p {
-                font-size: 0.8em;
-            }
-            .search-container {
-                padding: 6px;
-                gap: 6px;
-            }
-            .search-container input, .search-container button {
-                font-size: 0.8em;
-                padding: 5px 8px;
-            }
-            .map-overlay {
-                bottom: 5px;
-                left: 5px;
-                right: 5px;
-                max-width: calc(100% - 10px);
-                font-size: 0.75em;
-                padding: 10px;
-            }
-            .map-overlay h3 {
-                font-size: 1em;
-            }
-            .map-overlay .color-box {
-                width: 18px;
-                height: 14px;
-                margin-right: 8px;
-            }
-            .map-overlay .legend-item {
-                margin-bottom: 5px;
-            }
-            .search-container .search-status {
-                font-size: 0.7em;
-            }
+      /* Adjustments for very small screens (smartphones) */
+      @media (max-width: 480px) {
+        #app-header {
+          padding: 10px 10px;
+          gap: 6px;
         }
+        #app-header h1 {
+          font-size: 1.4em;
+        }
+        #app-header p {
+          font-size: 0.8em;
+        }
+        .search-container {
+          padding: 6px;
+          gap: 6px;
+        }
+        .search-container input,
+        .search-container button {
+          font-size: 0.8em;
+          padding: 5px 8px;
+        }
+        .map-overlay {
+          bottom: 5px;
+          left: 5px;
+          right: 5px;
+          max-width: calc(100% - 10px);
+          font-size: 0.75em;
+          padding: 10px;
+        }
+        .map-overlay h3 {
+          font-size: 1em;
+        }
+        .map-overlay .color-box {
+          width: 18px;
+          height: 14px;
+          margin-right: 8px;
+        }
+        .map-overlay .legend-item {
+          margin-bottom: 5px;
+        }
+        .search-container .search-status {
+          font-size: 0.7em;
+        }
+      }
 
-        /* Visually hide content for screen readers only */
-        .sr-only {
-            position: absolute;
-            width: 1px;
-            height: 1px;
-            padding: 0;
-            margin: -1px;
-            overflow: hidden;
-            clip: rect(0, 0, 0, 0);
-            white-space: nowrap;
-            border-width: 0;
-        }
+      /* Visually hide content for screen readers only */
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border-width: 0;
+      }
 
-        /* Styles for the "Zona Inundable" checkbox */
-        .legend-toggle-item {
-            display: flex;
-            align-items: center;
-            margin-bottom: 15px; /* Spacing below this item */
-            font-weight: bold;
-            font-size: 1em; /* Adjusted to fit better within collapsed area */
-        }
-        .legend-toggle-item input[type="checkbox"] {
-            margin-right: 10px;
-            width: 20px;
-            height: 20px;
-            cursor: pointer;
-            accent-color: #004d99; /* Custom checkbox color */
-        }
+      /* Styles for the "Zona Inundable" checkbox */
+      .legend-toggle-item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 15px; /* Spacing below this item */
+        font-weight: bold;
+        font-size: 1em; /* Adjusted to fit better within collapsed area */
+      }
+      .legend-toggle-item input[type="checkbox"] {
+        margin-right: 10px;
+        width: 20px;
+        height: 20px;
+        cursor: pointer;
+        accent-color: #004d99; /* Custom checkbox color */
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <header id="app-header" role="banner">
-        <h1>Mapa de Riesgo de Inundación de Puerto Rico</h1>
-        <p>Identifica áreas propensas a inundaciones para tu seguridad y preparación.</p>
+      <h1>Mapa de Riesgo de Inundación de Puerto Rico</h1>
+      <p>
+        Identifica áreas propensas a inundaciones para tu seguridad y
+        preparación.
+      </p>
 
-        <div class="search-container">
-            <label for="search-input" class="sr-only">Buscar lugar</label>
-            <input type="text" id="search-input" placeholder="Ej: San Juan" aria-label="Introduce el nombre de un lugar o dirección para buscar en el mapa">
-            <button id="search-button">Buscar</button>
-            <div id="search-status" class="search-status" role="status" aria-live="polite"></div>
-        </div>
+      <div class="search-container">
+        <label for="search-input" class="sr-only">Buscar lugar</label>
+        <input
+          type="text"
+          id="search-input"
+          placeholder="Ej: San Juan"
+          aria-label="Introduce el nombre de un lugar o dirección para buscar en el mapa"
+        />
+        <button id="search-button">Buscar</button>
+        <div
+          id="search-status"
+          class="search-status"
+          role="status"
+          aria-live="polite"
+        ></div>
+      </div>
     </header>
 
-    <div id="map" role="application" aria-label="Mapa interactivo de zonas de riesgo de inundación"></div>
+    <div
+      id="map"
+      role="application"
+      aria-label="Mapa interactivo de zonas de riesgo de inundación"
+    ></div>
 
     <!-- Legend Overlay -->
     <div class="map-overlay" role="complementary">
-        <div class="legend-title-bar" role="button" tabindex="0" aria-expanded="true" aria-controls="legend-details-container">
-            <h3 id="legend-heading">Clasificación de Zonas por FEMA</h3>
-            <span class="toggle-icon">▲</span> <!-- Up arrow for default open state -->
+      <div
+        class="legend-title-bar"
+        role="button"
+        tabindex="0"
+        aria-expanded="true"
+        aria-controls="legend-details-container"
+      >
+        <h3 id="legend-heading">Clasificación de Zonas por FEMA</h3>
+        <span class="toggle-icon">▲</span>
+        <!-- Up arrow for default open state -->
+      </div>
+      <div class="legend-details-container" id="legend-details-container">
+        <div class="legend-toggle-item">
+          <input type="checkbox" id="toggleFloodZones" checked />
+          <label for="toggleFloodZones">Zonas Inundables</label>
         </div>
-        <div class="legend-details-container" id="legend-details-container">
-            <div class="legend-toggle-item">
-                <input type="checkbox" id="toggleFloodZones" checked>
-                <label for="toggleFloodZones">Zonas Inundables</label>
-            </div>
-            <div class="legend-item">
-                <div class="color-box" style="background-color: #FFB3B3;"></div>
-                <span><strong>A</strong>: (Alto Riesgo - Inundación por creciente, sin nivel base definido)</span>
-            </div>
-            <div class="legend-item">
-                <div class="color-box" style="background-color: #008080;"></div>
-                <span><strong>AE</strong>: (Alto Riesgo - Inundación por creciente, con nivel base definido)</span>
-            </div>
-            <div class="legend-item">
-                <div class="color-box" style="background-color: #FFFF99;"></div>
-                <span><strong>AO</strong>: (Alto Riesgo - Inundación superficial, 1-3 pies de profundidad)</span>
-            </div>
-            <div class="legend-item">
-                <div class="color-box" style="background-color: #ADD8E6;"></div>
-                <span><strong>A Costera / V</strong>: (Alto Riesgo - Inundación costera con riesgo de olas, sin nivel base definido)</span>
-            </div>
-            <div class="legend-item">
-                <div class="color-box" style="background-color: #FF8C00;"></div>
-                <span><strong>VE</strong>: (Alto Riesgo - Inundación costera con riesgo de olas, con nivel base definido)</span>
-            </div>
-            <div class="legend-item">
-                <div class="color-box" style="background-color: #D3D3D3;"></div>
-                <span><strong>X</strong>: (0.2% Probabilidad Anual): (Riesgo Moderado - Fuera de la zona de alto riesgo)</span>
-            </div>
-            <div class="attribution">
-                Datos: FEMA NFHL (2021), <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a><br>
-                Imágenes: <a href="https://www.esri.com/en-us/arcgis/products/esri-demographics/data-browser/world-imagery" target="_blank">Esri World Imagery</a>
-            </div>
+        <div class="legend-item">
+          <div class="color-box" style="background-color: #ffb3b3"></div>
+          <span
+            ><strong>A</strong>: (Alto Riesgo - Inundación por creciente, sin
+            nivel base definido)</span
+          >
         </div>
+        <div class="legend-item">
+          <div class="color-box" style="background-color: #008080"></div>
+          <span
+            ><strong>AE</strong>: (Alto Riesgo - Inundación por creciente, con
+            nivel base definido)</span
+          >
+        </div>
+        <div class="legend-item">
+          <div class="color-box" style="background-color: #ffff99"></div>
+          <span
+            ><strong>AO</strong>: (Alto Riesgo - Inundación superficial, 1-3
+            pies de profundidad)</span
+          >
+        </div>
+        <div class="legend-item">
+          <div class="color-box" style="background-color: #add8e6"></div>
+          <span
+            ><strong>A Costera / V</strong>: (Alto Riesgo - Inundación costera
+            con riesgo de olas, sin nivel base definido)</span
+          >
+        </div>
+        <div class="legend-item">
+          <div class="color-box" style="background-color: #ff8c00"></div>
+          <span
+            ><strong>VE</strong>: (Alto Riesgo - Inundación costera con riesgo
+            de olas, con nivel base definido)</span
+          >
+        </div>
+        <div class="legend-item">
+          <div class="color-box" style="background-color: #d3d3d3"></div>
+          <span
+            ><strong>X</strong>: (0.2% Probabilidad Anual): (Riesgo Moderado -
+            Fuera de la zona de alto riesgo)</span
+          >
+        </div>
+        <div class="attribution">
+          Datos: FEMA NFHL (2021),
+          <a href="https://www.openstreetmap.org/copyright" target="_blank"
+            >OpenStreetMap</a
+          ><br />
+          Imágenes:
+          <a
+            href="https://www.esri.com/en-us/arcgis/products/esri-demographics/data-browser/world-imagery"
+            target="_blank"
+            >Esri World Imagery</a
+          >
+        </div>
+      </div>
     </div>
-
 
     <!-- MapLibre GL JS Library -->
     <script src="https://unpkg.com/maplibre-gl@4.3.0/dist/maplibre-gl.js"></script>
 
     <script>
-        // Adjust map top position based on header height for better responsiveness
-        function adjustMapTop() {
-            const headerHeight = document.getElementById('app-header').offsetHeight;
-            document.getElementById('map').style.top = headerHeight + 'px';
-        }
+      // Adjust map top position based on header height for better responsiveness
+      function adjustMapTop() {
+        const headerHeight = document.getElementById("app-header").offsetHeight;
+        document.getElementById("map").style.top = headerHeight + "px";
+      }
 
-        window.addEventListener('load', adjustMapTop);
-        window.addEventListener('resize', adjustMapTop);
+      window.addEventListener("load", adjustMapTop);
+      window.addEventListener("resize", adjustMapTop);
 
-        const map = new maplibregl.Map({
-            container: 'map', // container ID
-            style: {
-                version: 8,
-                sources: {
-                    'esri-satellite': {
-                        type: 'raster',
-                        tiles: [
-                            'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
-                        ],
-                        tileSize: 256,
-                        attribution: 'Imágenes: <a href="https://www.esri.com/en-us/arcgis/products/esri-demographics/data-browser/world-imagery" target="_blank">Esri World Imagery</a>'
-                    }
-                },
-                layers: [
-                    {
-                        id: 'esri-satellite-tiles',
-                        type: 'raster',
-                        source: 'esri-satellite',
-                        minzoom: 0,
-                        maxzoom: 20
-                    }
-                ]
+      const map = new maplibregl.Map({
+        container: "map", // container ID
+        style: {
+          version: 8,
+          sources: {
+            "esri-satellite": {
+              type: "raster",
+              tiles: [
+                "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+              ],
+              tileSize: 256,
+              attribution:
+                'Imágenes: <a href="https://www.esri.com/en-us/arcgis/products/esri-demographics/data-browser/world-imagery" target="_blank">Esri World Imagery</a>',
             },
-            center: [-66.35, 18.0], // starting position [lng, lat] for Puerto Rico
-            zoom: 8 // Increased initial zoom for island view
-        });
+            // NUEVA FUENTE PARA LAS ETIQUETAS
+            "esri-labels": {
+              type: "raster",
+              tiles: [
+                "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}",
+              ],
+              tileSize: 256,
+              // La atribución principal ya lo cubre en el HTML
+            },
+          },
+          layers: [
+            {
+              id: "esri-satellite-tiles",
+              type: "raster",
+              source: "esri-satellite",
+              minzoom: 0,
+              maxzoom: 20,
+            },
+            // NUEVA CAPA DE ETIQUETAS, COLOCADA ENCIMA DE LA SATELITAL
+            {
+              id: "esri-labels-tiles",
+              type: "raster",
+              source: "esri-labels",
+              minzoom: 0,
+              maxzoom: 20,
+            },
+          ],
+        },
+        center: [-66.35, 18.0], // starting position [lng, lat] for Puerto Rico
+        zoom: 8, // Increased initial zoom for island view
+      });
 
-        // Marker for search results
-        let searchResultMarker = null;
+      // Marker for search results
+      let searchResultMarker = null;
 
-        // Search functionality
-        const searchInput = document.getElementById('search-input');
-        const searchButton = document.getElementById('search-button');
-        const searchStatus = document.getElementById('search-status');
+      // Search functionality
+      const searchInput = document.getElementById("search-input");
+      const searchButton = document.getElementById("search-button");
+      const searchStatus = document.getElementById("search-status");
 
-        searchButton.addEventListener('click', performSearch);
-        searchInput.addEventListener('keypress', (event) => {
-            if (event.key === 'Enter') {
-                performSearch();
-            }
-        });
+      searchButton.addEventListener("click", performSearch);
+      searchInput.addEventListener("keypress", (event) => {
+        if (event.key === "Enter") {
+          performSearch();
+        }
+      });
 
-        async function performSearch() {
-            const query = searchInput.value.trim();
-            if (!query) {
-                searchStatus.textContent = 'Por favor, introduce un lugar.';
-                return;
-            }
-
-            searchStatus.textContent = 'Buscando...';
-            // Construct Nominatim API URL (with 'Puerto Rico' added for better results)
-            const bboxPR = '-67.3,-67.9,17.9,18.5'; // Approx bounds: min_lon,min_lat,max_lon,max_lat
-            const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}, Puerto Rico&format=json&limit=1&bounded=1&viewbox=${bboxPR}`;
-
-            try {
-                const response = await fetch(url);
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                const data = await response.json();
-
-                if (data && data.length > 0) {
-                    const result = data[0];
-                    const lat = parseFloat(result.lat);
-                    const lon = parseFloat(result.lon);
-
-                    searchStatus.textContent = `Encontrado: ${result.display_name}`;
-
-                    // Fly to the location
-                    map.flyTo({
-                        center: [lon, lat],
-                        zoom: 15, // Zoom in closer
-                        essential: true
-                    });
-
-                    // Add/move marker
-                    if (searchResultMarker) {
-                        searchResultMarker.setLngLat([lon, lat]);
-                    } else {
-                        searchResultMarker = new maplibregl.Marker({ color: '#004d99' })
-                            .setLngLat([lon, lat])
-                            .addTo(map);
-                    }
-                    searchResultMarker.setPopup(new maplibregl.Popup().setHTML(`<b>${result.display_name}</b>`));
-                    searchResultMarker.getPopup().addTo(map);
-
-                } else {
-                    searchStatus.textContent = 'No se encontraron resultados. Intenta con un nombre más específico o diferente.';
-                    if (searchResultMarker) {
-                        searchResultMarker.remove();
-                        searchResultMarker = null;
-                    }
-                }
-            } catch (error) {
-                searchStatus.textContent = `Error en la búsqueda: ${error.message}`;
-                console.error('Geocoding error:', error);
-            }
+      async function performSearch() {
+        const query = searchInput.value.trim();
+        if (!query) {
+          searchStatus.textContent = "Por favor, introduce un lugar.";
+          return;
         }
 
-        map.on('load', () => {
-            // 1. Add Puerto Rico Municipality GeoJSON
-            map.addSource('municipalities', {
-                type: 'geojson',
-                data: 'data/puerto_rico_municipalities.geojson'
+        searchStatus.textContent = "Buscando...";
+        // Construct Nominatim API URL (with 'Puerto Rico' added for better results)
+        const bboxPR = "-67.3,-67.9,17.9,18.5"; // Approx bounds: min_lon,min_lat,max_lon,max_lat
+        const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
+          query
+        )}, Puerto Rico&format=json&limit=1&bounded=1&viewbox=${bboxPR}`;
+
+        try {
+          const response = await fetch(url);
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          const data = await response.json();
+
+          if (data && data.length > 0) {
+            const result = data[0];
+            const lat = parseFloat(result.lat);
+            const lon = parseFloat(result.lon);
+
+            searchStatus.textContent = `Encontrado: ${result.display_name}`;
+
+            // Fly to the location
+            map.flyTo({
+              center: [lon, lat],
+              zoom: 15, // Zoom in closer
+              essential: true,
             });
 
-            map.addLayer({
-                id: 'municipalities-layer',
-                type: 'fill',
-                source: 'municipalities',
-                layout: {},
-                paint: {
-                    'fill-color': '#ccc',
-                    'fill-opacity': 0.1
-                }
-            });
-            map.addLayer({
-                id: 'municipalities-borders',
-                type: 'line',
-                source: 'municipalities',
-                layout: {},
-                paint: {
-                    'line-color': '#000',
-                    'line-width': 1
-                }
-            });
-
-            map.on('click', 'municipalities-layer', (e) => {
-                const properties = e.features[0].properties;
-                new maplibregl.Popup()
-                    .setLngLat(e.lngLat)
-                    .setHTML(`<b>${properties.NAME_OF_MUNICIPALITY || 'Municipio'}</b>`)
-                    .addTo(map);
-            });
-
-            map.on('mouseenter', 'municipalities-layer', () => {
-                map.getCanvas().style.cursor = 'pointer';
-            });
-            map.on('mouseleave', 'municipalities-layer', () => {
-                map.getCanvas().style.cursor = '';
-            });
-
-
-            // 2. Add Flood Zone GeoJSON with Data-Driven Styling
-            map.addSource('flood-zones', {
-                type: 'geojson',
-                data: 'data/puerto_rico_flood_hazards_simplified.geojson' // Using simplified data
-            });
-
-            map.addLayer({
-                id: 'flood-zones-fill',
-                type: 'fill',
-                source: 'flood-zones',
-                paint: {
-                    'fill-color': [
-                        'match',
-                        ['get', 'FLD_ZONE'],
-                        // Mapping to image colors and zones
-                        ['A'], '#FFB3B3',      // Light Red/Pink for A
-                        ['AE'], '#008080',     // Teal for AE
-                        ['AO'], '#FFFF99',     // Light Yellow for AO
-                        ['V'], '#ADD8E6',      // Light Blue for V (A Costera)
-                        ['VE'], '#FF8C00',     // Orange for VE
-                        ['X500'], '#D3D3D3',   // Light Grey for X (0.2%)
-                        'rgba(0,0,0,0)'        // Default: fully transparent for other zones (e.g., X unshaded, D, etc.)
-                    ],
-                    'fill-opacity': [
-                        'match',
-                        ['get', 'FLD_ZONE'],
-                        ['A', 'AE', 'AO', 'V', 'VE'], 0.6, // High risk opacity
-                        ['X500'], 0.4,                    // Moderate risk opacity
-                        0                                 // Default: transparent
-                    ]
-                }
-            });
-
-            map.addLayer({
-                id: 'flood-zones-borders',
-                type: 'line',
-                source: 'flood-zones',
-                paint: {
-                    'line-color': [
-                        'match',
-                        ['get', 'FLD_ZONE'],
-                        ['A'], '#CC9999',      // Darker pink
-                        ['AE'], '#006666',     // Darker teal
-                        ['AO'], '#CCCC00',     // Darker yellow
-                        ['V'], '#6699CC',      // Darker light blue
-                        ['VE'], '#CC6600',     // Darker orange
-                        ['X500'], '#A0A0A0',   // Darker grey
-                        'rgba(0,0,0,0)'        // Default: fully transparent
-                    ],
-                    'line-width': 1.5,
-                    'line-opacity': [
-                        'match',
-                        ['get', 'FLD_ZONE'],
-                        ['A', 'AE', 'AO', 'V', 'VE'], 0.8, // High risk opacity
-                        ['X500'], 0.7,                    // Moderate risk opacity
-                        0                                 // Default: transparent
-                    ]
-                }
-            });
-
-            map.on('click', 'flood-zones-fill', (e) => {
-                const properties = e.features[0].properties;
-                const sfhaText = properties.SFHA_TF === 'T' ? 'Sí (Área Especial de Riesgo de Inundación)' : (properties.SFHA_TF === 'F' ? 'No (Fuera de SFHA)' : 'N/A');
-
-                // Only show popup if it's a zone we're actually displaying
-                if (properties.FLD_ZONE && (['A', 'AE', 'AO', 'V', 'VE', 'X500'].includes(properties.FLD_ZONE))) {
-                    new maplibregl.Popup()
-                        .setLngLat(e.lngLat)
-                        .setHTML(`
-                            <b>Zona de Inundación:</b> ${properties.FLD_ZONE || 'N/A'}<br>
-                            <b>Subtipo de Zona:</b> ${properties.ZONE_SUBTY || 'N/A'}<br>
-                            <b>SFHA:</b> ${sfhaText}
-                        `)
-                        .addTo(map);
-                }
-            });
-
-            map.on('mouseenter', 'flood-zones-fill', () => {
-                map.getCanvas().style.cursor = 'pointer';
-            });
-            map.on('mouseleave', 'flood-zones-fill', () => {
-                map.getCanvas().style.cursor = '';
-            });
-
-            // Toggle Flood Zones Visibility
-            const toggleFloodZonesCheckbox = document.getElementById('toggleFloodZones');
-            toggleFloodZonesCheckbox.addEventListener('change', (event) => {
-                const visibility = event.target.checked ? 'visible' : 'none';
-                map.setLayoutProperty('flood-zones-fill', 'visibility', visibility);
-                map.setLayoutProperty('flood-zones-borders', 'visibility', visibility);
-            });
-
-            // Toggle Legend Details Visibility (with initial state for mobile)
-            const legendTitleBar = document.querySelector('.legend-title-bar');
-            const legendDetailsContainer = document.getElementById('legend-details-container');
-            const toggleIcon = legendTitleBar.querySelector('.toggle-icon');
-
-            // Set initial state based on screen width
-            const isMobileView = window.innerWidth <= 768; // Matches your media query breakpoint
-
-            if (isMobileView) {
-                legendDetailsContainer.classList.add('collapsed');
-                toggleIcon.classList.add('rotated'); // Rotate down arrow
-                legendTitleBar.setAttribute('aria-expanded', 'false'); // Indicate collapsed state
+            // Add/move marker
+            if (searchResultMarker) {
+              searchResultMarker.setLngLat([lon, lat]);
             } else {
-                // Ensure desktop default is open
-                legendDetailsContainer.classList.remove('collapsed');
-                toggleIcon.classList.remove('rotated'); // Up arrow
-                legendTitleBar.setAttribute('aria-expanded', 'true'); // Indicate expanded state
+              searchResultMarker = new maplibregl.Marker({ color: "#004d99" })
+                .setLngLat([lon, lat])
+                .addTo(map);
             }
+            searchResultMarker.setPopup(
+              new maplibregl.Popup().setHTML(`<b>${result.display_name}</b>`)
+            );
+            searchResultMarker.getPopup().addTo(map);
+          } else {
+            searchStatus.textContent =
+              "No se encontraron resultados. Intenta con un nombre más específico o diferente.";
+            if (searchResultMarker) {
+              searchResultMarker.remove();
+              searchResultMarker = null;
+            }
+          }
+        } catch (error) {
+          searchStatus.textContent = `Error en la búsqueda: ${error.message}`;
+          console.error("Geocoding error:", error);
+        }
+      }
 
-            // Event listener for toggling (works for both initial states)
-            legendTitleBar.addEventListener('click', () => {
-                const isCollapsed = legendDetailsContainer.classList.toggle('collapsed');
-                toggleIcon.classList.toggle('rotated');
-                legendTitleBar.setAttribute('aria-expanded', !isCollapsed); // Update ARIA attribute
-            });
+      map.on("load", () => {
+        // 1. Add Puerto Rico Municipality GeoJSON
+        map.addSource("municipalities", {
+          type: "geojson",
+          data: "data/puerto_rico_municipalities.geojson",
         });
+
+        map.addLayer({
+          id: "municipalities-layer",
+          type: "fill",
+          source: "municipalities",
+          layout: {},
+          paint: {
+            "fill-color": "#ccc",
+            "fill-opacity": 0.1,
+          },
+        });
+        map.addLayer({
+          id: "municipalities-borders",
+          type: "line",
+          source: "municipalities",
+          layout: {},
+          paint: {
+            "line-color": "#000",
+            "line-width": 1,
+          },
+        });
+
+        map.on("click", "municipalities-layer", (e) => {
+          const properties = e.features[0].properties;
+          new maplibregl.Popup()
+            .setLngLat(e.lngLat)
+            .setHTML(`<b>${properties.NAME_OF_MUNICIPALITY || "Municipio"}</b>`)
+            .addTo(map);
+        });
+
+        map.on("mouseenter", "municipalities-layer", () => {
+          map.getCanvas().style.cursor = "pointer";
+        });
+        map.on("mouseleave", "municipalities-layer", () => {
+          map.getCanvas().style.cursor = "";
+        });
+
+        // 2. Add Flood Zone GeoJSON with Data-Driven Styling
+        map.addSource("flood-zones", {
+          type: "geojson",
+          data: "data/puerto_rico_flood_hazards_simplified.geojson", // Using simplified data
+        });
+
+        map.addLayer({
+          id: "flood-zones-fill",
+          type: "fill",
+          source: "flood-zones",
+          paint: {
+            "fill-color": [
+              "match",
+              ["get", "FLD_ZONE"],
+              // Mapping to image colors and zones
+              ["A"],
+              "#FFB3B3", // Light Red/Pink for A
+              ["AE"],
+              "#008080", // Teal for AE
+              ["AO"],
+              "#FFFF99", // Light Yellow for AO
+              ["V"],
+              "#ADD8E6", // Light Blue for V (A Costera)
+              ["VE"],
+              "#FF8C00", // Orange for VE
+              ["X500"],
+              "#D3D3D3", // Light Grey for X (0.2%)
+              "rgba(0,0,0,0)", // Default: fully transparent for other zones (e.g., X unshaded, D, etc.)
+            ],
+            "fill-opacity": [
+              "match",
+              ["get", "FLD_ZONE"],
+              ["A", "AE", "AO", "V", "VE"],
+              0.6, // High risk opacity
+              ["X500"],
+              0.4, // Moderate risk opacity
+              0, // Default: transparent
+            ],
+          },
+        });
+
+        map.addLayer({
+          id: "flood-zones-borders",
+          type: "line",
+          source: "flood-zones",
+          paint: {
+            "line-color": [
+              "match",
+              ["get", "FLD_ZONE"],
+              ["A"],
+              "#CC9999", // Darker pink
+              ["AE"],
+              "#006666", // Darker teal
+              ["AO"],
+              "#CCCC00", // Darker yellow
+              ["V"],
+              "#6699CC", // Darker light blue
+              ["VE"],
+              "#CC6600", // Darker orange
+              ["X500"],
+              "#A0A0A0", // Darker grey
+              "rgba(0,0,0,0)", // Default: fully transparent
+            ],
+            "line-width": 1.5,
+            "line-opacity": [
+              "match",
+              ["get", "FLD_ZONE"],
+              ["A", "AE", "AO", "V", "VE"],
+              0.8, // High risk opacity
+              ["X500"],
+              0.7, // Moderate risk opacity
+              0, // Default: transparent
+            ],
+          },
+        });
+
+        map.on("click", "flood-zones-fill", (e) => {
+          const properties = e.features[0].properties;
+          const sfhaText =
+            properties.SFHA_TF === "T"
+              ? "Sí (Área Especial de Riesgo de Inundación)"
+              : properties.SFHA_TF === "F"
+              ? "No (Fuera de SFHA)"
+              : "N/A";
+
+          // Only show popup if it's a zone we're actually displaying
+          if (
+            properties.FLD_ZONE &&
+            ["A", "AE", "AO", "V", "VE", "X500"].includes(properties.FLD_ZONE)
+          ) {
+            new maplibregl.Popup()
+              .setLngLat(e.lngLat)
+              .setHTML(
+                `
+                            <b>Zona de Inundación:</b> ${
+                              properties.FLD_ZONE || "N/A"
+                            }<br>
+                            <b>Subtipo de Zona:</b> ${
+                              properties.ZONE_SUBTY || "N/A"
+                            }<br>
+                            <b>SFHA:</b> ${sfhaText}
+                        `
+              )
+              .addTo(map);
+          }
+        });
+
+        map.on("mouseenter", "flood-zones-fill", () => {
+          map.getCanvas().style.cursor = "pointer";
+        });
+        map.on("mouseleave", "flood-zones-fill", () => {
+          map.getCanvas().style.cursor = "";
+        });
+
+        // Toggle Flood Zones Visibility
+        const toggleFloodZonesCheckbox =
+          document.getElementById("toggleFloodZones");
+        toggleFloodZonesCheckbox.addEventListener("change", (event) => {
+          const visibility = event.target.checked ? "visible" : "none";
+          map.setLayoutProperty("flood-zones-fill", "visibility", visibility);
+          map.setLayoutProperty(
+            "flood-zones-borders",
+            "visibility",
+            visibility
+          );
+        });
+
+        // Toggle Legend Details Visibility (with initial state for mobile)
+        const legendTitleBar = document.querySelector(".legend-title-bar");
+        const legendDetailsContainer = document.getElementById(
+          "legend-details-container"
+        );
+        const toggleIcon = legendTitleBar.querySelector(".toggle-icon");
+
+        // Set initial state based on screen width
+        const isMobileView = window.innerWidth <= 768; // Matches your media query breakpoint
+
+        if (isMobileView) {
+          legendDetailsContainer.classList.add("collapsed");
+          toggleIcon.classList.add("rotated"); // Rotate down arrow
+          legendTitleBar.setAttribute("aria-expanded", "false"); // Indicate collapsed state
+        } else {
+          // Ensure desktop default is open
+          legendDetailsContainer.classList.remove("collapsed");
+          toggleIcon.classList.remove("rotated"); // Up arrow
+          legendTitleBar.setAttribute("aria-expanded", "true"); // Indicate expanded state
+        }
+
+        // Event listener for toggling (works for both initial states)
+        legendTitleBar.addEventListener("click", () => {
+          const isCollapsed =
+            legendDetailsContainer.classList.toggle("collapsed");
+          toggleIcon.classList.toggle("rotated");
+          legendTitleBar.setAttribute("aria-expanded", !isCollapsed); // Update ARIA attribute
+        });
+      });
     </script>
-</body>
+  </body>
 </html>
