@@ -35,7 +35,8 @@
             --swiss-black: #1c1c1e;
             --swiss-white: #ffffff;
             --swiss-grey:  #e5e5ea;
-            --ui-shadow: 0 8px 32px rgba(0,0,0,0.12);
+            
+            --ui-shadow: 0 12px 40px rgba(0,0,0,0.12);
             --font-stack: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
         }
 
@@ -64,7 +65,7 @@
             top: 24px;
             left: 24px;
             width: 340px;
-            background: rgba(255, 255, 255, 0.65);
+            background: rgba(255, 255, 255, 0.55);
             backdrop-filter: blur(15px);
             padding: 32px;
             z-index: 10;
@@ -72,7 +73,7 @@
             border-radius: 10px;
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 24px;
             transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
         }
 
@@ -99,8 +100,9 @@
             display: flex;
             align-items: center;
             border: 1px solid var(--swiss-grey);
-            border-radius: 4px;
+            border-radius: 10px;
             padding: 4px 8px;
+            transition: border-color 0.5s;
             background: white;
         }
 
@@ -114,7 +116,7 @@
             outline: none;
             font-family: var(--font-stack);
             font-size: 14px;
-            padding: 10px 4px;
+            padding: 8px 4px;
             color: var(--swiss-black);
             background: transparent;
         }
@@ -132,7 +134,7 @@
 
         #search-status {
             font-size: 11px;
-            margin-top: 6px;
+            margin-top: 8px;
             color: #666;
             font-weight: 500;
             min-height: 14px;
