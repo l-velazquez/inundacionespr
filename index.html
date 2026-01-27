@@ -3,13 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Puerto Rico Flood Risk </title>
+     <title>Puerto Rico Flood Risk </title>
 
     <!-- Favicon -->
     <link rel="icon" type="image/x-icon" href="favicon.ico" />
     <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
     <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+    
     
     
     <!-- MapLibre GL JS CSS -->
@@ -58,7 +59,7 @@
             width: 100%;
             height: 100%;
             background: rgba(255, 255, 255, 0.98);
-            z-index: 9999; /* Topmost layer */
+            z-index: 9999;
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -70,7 +71,7 @@
             width: 40px;
             height: 40px;
             border: 4px solid var(--swiss-grey);
-            border-top: 4px solid var(--color-high-ae); /* Red spinner */
+            border-top: 4px solid var(--color-high-ae);
             border-radius: 50%;
             animation: spin 1s linear infinite;
             margin-bottom: 16px;
@@ -108,11 +109,12 @@
             top: 24px;
             left: 24px;
             width: 340px;
-            background: rgba(255, 255, 255, 0.98);
+            background: rgba(255, 255, 255, 0.55);
+            backdrop-filter: blur(15px);
             padding: 32px;
             z-index: 10;
             box-shadow: var(--ui-shadow);
-            border-radius: 2px;
+            border-radius: 10px;
             display: flex;
             flex-direction: column;
             gap: 24px;
@@ -320,22 +322,27 @@
         <div>
             <div class="legend-title">Risk Designation</div>
             
+            <!-- VE: Coastal -->
             <div class="legend-item">
                 <span class="color-dot" style="background: var(--color-coastal);"></span>
                 <span>Coastal Storm (VE)</span>
             </div>
+            <!-- AE: Detailed -->
             <div class="legend-item">
                 <span class="color-dot" style="background: var(--color-high-ae);"></span>
                 <span>High Risk (Zone AE)</span>
             </div>
+            <!-- A/AH/AO: Approximate/Shallow -->
             <div class="legend-item">
                 <span class="color-dot" style="background: var(--color-high-a);"></span>
                 <span>High Risk (Zone A, AH, AO)</span>
             </div>
+            <!-- 0.2%: Moderate -->
             <div class="legend-item">
                 <span class="color-dot" style="background: var(--color-moderate);"></span>
                 <span>Moderate (0.2% / X-Shaded)</span>
             </div>
+            <!-- Minimal -->
             <div class="legend-item">
                 <span class="color-dot" style="background: #e5e5ea; border: 1px solid #ccc;"></span>
                 <span>Minimal Risk</span>
@@ -356,17 +363,22 @@
             style: {
                 version: 8,
                 sources: {
+                    // "Simple" Base Map (CartoDB Positron - Free & Clean)
                     'simple-tiles': {
                         type: 'raster',
                         tiles: ['https://basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'],
                         tileSize: 256,
                         attribution: '&copy; OpenStreetMap &copy; CARTO'
                     },
+                    // "Satellite" Base Map (ESRI World Imagery - Reliable)
+                    // We switched from USGS to Esri to fix the 404 errors
                     'satellite-tiles': {
                         type: 'raster',
-                        tiles: ['https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile/{z}/{y}/{x}'],
+                        tiles: [
+                            'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
+                        ],
                         tileSize: 256,
-                        attribution: 'USGS The National Map'
+                        attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
                     }
                 },
                 layers: [
@@ -435,6 +447,7 @@
 
                     if (searchResultMarker) searchResultMarker.remove();
                     
+                    // Custom Marker Element
                     const el = document.createElement('div');
                     el.style.width = '20px';
                     el.style.height = '20px';
@@ -460,9 +473,8 @@
             }
         }
 
-        // 3. Load Flood Data with Loader Logic
+        // 3. Load Flood Data
         map.on('load', () => {
-
             // LOAD FROM EXTERNAL FILE (Requires local server)
             map.addSource('flood-data', {
                 type: 'geojson',
@@ -479,16 +491,16 @@
                     'fill-color': [
                         'match',
                         ['get', 'FLD_ZONE'],
-                        'VE', '#af52de', // Coastal Purple
-                        'AE', '#ff3b30', // High Red
-                        'A',  '#ff9500', // High Orange
-                        'AH', '#ff9500', // High Orange
-                        'AO', '#ff9500', // High Orange
+                        'VE', '#af52de', // Purple (Coastal)
+                        'AE', '#ff3b30', // Red (Detailed High Risk)
+                        'A',  '#ff9500', // Orange (Approx High Risk)
+                        'AH', '#ff9500', // Orange (Shallow)
+                        'AO', '#ff9500', // Orange (Shallow)
                         'X',  [
                                 'case',
                                 ['==', ['get', 'ZONE_SUBTY'], '0.2 PCT ANNUAL CHANCE FLOOD HAZARD'],
-                                '#ffcc00', // Moderate Yellow
-                                'rgba(0,0,0,0)' // Minimal Transparent
+                                '#ffcc00', // Gold/Yellow (Moderate)
+                                'rgba(0,0,0,0)' // Transparent (Minimal)
                               ],
                         '#cccccc' // Default
                     ],
@@ -510,30 +522,23 @@
             });
 
             // --- LOADER REMOVAL LOGIC ---
-            // We listen for the 'data' event. When the 'flood-data' source 
-            // is fully loaded and rendered, we hide the loader.
-            
+            // Wait for data to be active before hiding the loader
             const hideLoader = () => {
                 const loader = document.getElementById('loader');
                 if (loader && !loader.classList.contains('fade-out')) {
                     loader.classList.add('fade-out');
-                    // Completely remove from DOM after fade transition (0.5s)
-                    setTimeout(() => {
-                        loader.style.display = 'none';
-                    }, 500);
+                    setTimeout(() => { loader.style.display = 'none'; }, 500);
                 }
             };
 
-            // Option A: Hide when the specific source is idle
-            map.on('idle', () => {
-                hideLoader();
-            });
+            // Option A: Hide when data starts rendering
+            map.once('idle', hideLoader);
             
-            // Option B: Fallback timeout (in case data is empty or too fast)
-            setTimeout(hideLoader, 3000); 
+            // Option B: Fallback
+            setTimeout(hideLoader, 3000);
         });
 
-        // 4. Popups
+        // 4. Popups & Interaction
         map.on('click', 'flood-fill', (e) => {
             const props = e.features[0].properties;
             
