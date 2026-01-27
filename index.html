@@ -19,7 +19,7 @@
     <!-- Google Fonts: Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
     <style>
         /* --- SWISS DESIGN SYSTEM --- */
@@ -51,50 +51,6 @@
             background-color: #f2f2f7;
         }
 
-        /* --- LOADING SCREEN --- */
-        #loader {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(255, 255, 255, 0.98);
-            z-index: 9999;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            transition: opacity 0.5s ease;
-        }
-
-        .loader-spinner {
-            width: 40px;
-            height: 40px;
-            border: 4px solid var(--swiss-grey);
-            border-top: 4px solid var(--color-high-ae);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 16px;
-        }
-
-        .loader-text {
-            font-size: 12px;
-            font-weight: 700;
-            letter-spacing: 0.05em;
-            text-transform: uppercase;
-            color: var(--swiss-black);
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .fade-out {
-            opacity: 0;
-            pointer-events: none;
-        }
-
         /* --- MAP CONTAINER --- */
         #map {
             position: absolute;
@@ -109,7 +65,7 @@
             top: 24px;
             left: 24px;
             width: 340px;
-            background: rgba(255, 255, 255, 0.65);
+            background: rgba(255, 255, 255, 0.55);
             backdrop-filter: blur(15px);
             padding: 32px;
             z-index: 10;
@@ -118,12 +74,11 @@
             display: flex;
             flex-direction: column;
             gap: 24px;
-            max-height: 90vh;
-            overflow-y: auto;
+            transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
         }
 
         h1 {
-            font-size: 20px;
+            font-size: 18px;
             font-weight: 700;
             margin: 0;
             letter-spacing: -0.02em;
@@ -132,9 +87,9 @@
 
         p.subtitle {
             font-size: 13px;
-            line-height: 1.5;
+            line-height: 1.4;
             color: #666;
-            margin: 0;
+            margin: 4px 0 0 0;
             font-weight: 400;
         }
 
@@ -145,9 +100,9 @@
             display: flex;
             align-items: center;
             border: 1px solid var(--swiss-grey);
-            border-radius: 4px;
+            border-radius: 10px;
             padding: 4px 8px;
-            transition: border-color 0.2s;
+            transition: border-color 0.5s;
             background: white;
         }
 
@@ -176,8 +131,6 @@
             align-items: center;
             justify-content: center;
         }
-        
-        #search-button:hover { opacity: 0.6; }
 
         #search-status {
             font-size: 11px;
@@ -185,6 +138,52 @@
             color: #666;
             font-weight: 500;
             min-height: 14px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* --- COLLAPSIBLE SECTION --- */
+        .ui-details {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            overflow: hidden;
+            transition: max-height 0.4s ease, opacity 0.4s ease;
+            max-height: 500px; /* Arbitrary large number */
+            opacity: 1;
+        }
+
+        /* State: Collapsed */
+        .ui-panel.is-collapsed .ui-details {
+            max-height: 0;
+            opacity: 0;
+            margin: 0; /* Remove gap when hidden */
+        }
+
+        /* --- TOGGLE BUTTON (The Chevron) --- */
+        .ui-toggle-btn {
+            display: none; /* Hidden on desktop by default */
+            width: 100%;
+            padding: 12px 0 0 0;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            justify-content: center;
+            align-items: center;
+            border-top: 1px solid var(--swiss-grey);
+            margin-top: -10px; /* Pull it up slightly */
+        }
+        
+        .toggle-icon {
+            width: 24px;
+            height: 24px;
+            color: #999;
+            transition: transform 0.3s ease;
+        }
+
+        .ui-panel.is-collapsed .toggle-icon {
+            transform: rotate(180deg); /* Flip arrow when collapsed */
         }
 
         /* --- TOGGLES --- */
@@ -228,57 +227,85 @@
         .legend-item {
             display: flex;
             align-items: center;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
             font-size: 13px;
             font-weight: 500;
         }
 
         .color-dot {
-            width: 12px;
-            height: 12px;
+            width: 10px;
+            height: 10px;
             border-radius: 2px;
-            margin-right: 12px;
+            margin-right: 10px;
+            flex-shrink: 0;
         }
 
         /* --- POPUP --- */
         .maplibregl-popup-content {
-            padding: 20px;
+            padding: 16px;
             font-family: var(--font-stack);
             box-shadow: var(--ui-shadow);
             border-radius: 4px;
-            max-width: 280px;
+            max-width: 260px;
             border: 1px solid #eee;
         }
         
-        .maplibregl-popup-close-button {
-            padding: 8px;
-            color: #999;
-            font-size: 16px;
+        .popup-zone { font-size: 16px; font-weight: 700; display: block; margin-bottom: 4px; }
+        .popup-desc { font-size: 12px; color: #666; line-height: 1.4; }
+
+        /* --- LOADING SCREEN --- */
+        #loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.98);
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.5s ease;
         }
 
-        .popup-zone {
-            font-size: 18px;
-            font-weight: 700;
-            display: block;
-            margin-bottom: 4px;
+        .loader-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--swiss-grey);
+            border-top: 4px solid var(--color-high-ae);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 16px;
         }
+        .loader-text { font-size: 12px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .fade-out { opacity: 0; pointer-events: none; }
 
-        .popup-desc {
-            font-size: 13px;
-            color: #666;
-            line-height: 1.4;
-        }
-
+        /* --- RESPONSIVE MOBILE --- */
         @media (max-width: 600px) {
             .ui-panel {
                 top: auto;
                 bottom: 0;
                 left: 0;
                 width: 100%;
+                /* Remove border radius on bottom corners */
+                border-radius: 12px 12px 0 0; 
                 box-sizing: border-box;
-                padding: 24px;
-                border-radius: 12px 12px 0 0;
+                padding: 20px 20px 10px 20px; /* Less padding on bottom */
                 gap: 16px;
+            }
+
+            .ui-toggle-btn {
+                display: flex; /* Show the collapse button only on mobile */
+            }
+
+            /* Adjust title size for mobile */
+            h1 { font-size: 16px; }
+            
+            /* Hide subtitle on mobile when collapsed to save even more space */
+            .ui-panel.is-collapsed .subtitle {
+                display: none;
             }
         }
     </style>
@@ -292,62 +319,70 @@
     </div>
 
     <!-- UI Panel -->
-    <div class="ui-panel">
-        <div>
+    <div class="ui-panel is-collapsed"> <!-- Start collapsed on mobile by default -->
+        
+        <!-- HEADER (Always Visible) -->
+        <div class="ui-header">
             <h1>Flood Risk PR</h1>
             <p class="subtitle">Interactive visualization of flood hazard areas.</p>
-        </div>
-
-        <!-- Search -->
-        <div class="search-container">
-            <div class="search-box">
-                <input type="text" id="search-input" placeholder="Search city, street..." />
-                <button id="search-button">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="11" cy="11" r="8"></circle>
-                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                    </svg>
-                </button>
-            </div>
-            <div id="search-status"></div>
-        </div>
-
-        <!-- Toggles -->
-        <div class="toggle-group">
-            <button id="btn-simple" class="toggle-btn active">Map</button>
-            <button id="btn-satellite" class="toggle-btn">Satellite</button>
-        </div>
-
-        <!-- Legend -->
-        <div>
-            <div class="legend-title">Risk Designation</div>
             
-            <!-- VE: Coastal -->
-            <div class="legend-item">
-                <span class="color-dot" style="background: var(--color-coastal);"></span>
-                <span>Coastal Storm (VE)</span>
-            </div>
-            <!-- AE: Detailed -->
-            <div class="legend-item">
-                <span class="color-dot" style="background: var(--color-high-ae);"></span>
-                <span>High Risk (Zone AE)</span>
-            </div>
-            <!-- A/AH/AO: Approximate/Shallow -->
-            <div class="legend-item">
-                <span class="color-dot" style="background: var(--color-high-a);"></span>
-                <span>High Risk (Zone A, AH, AO)</span>
-            </div>
-            <!-- 0.2%: Moderate -->
-            <div class="legend-item">
-                <span class="color-dot" style="background: var(--color-moderate);"></span>
-                <span>Moderate (0.2% / X-Shaded)</span>
-            </div>
-            <!-- Minimal -->
-            <div class="legend-item">
-                <span class="color-dot" style="background: #e5e5ea; border: 1px solid #ccc;"></span>
-                <span>Minimal Risk</span>
+            <!-- Search -->
+            <div class="search-container">
+                <div class="search-box">
+                    <input type="text" id="search-input" placeholder="Search city or street..." />
+                    <button id="search-button">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        </svg>
+                    </button>
+                </div>
+                <div id="search-status"></div>
             </div>
         </div>
+
+        <!-- DETAILS (Collapsible) -->
+        <div class="ui-details">
+            <!-- Toggles -->
+            <div class="toggle-group">
+                <button id="btn-simple" class="toggle-btn active">Map</button>
+                <button id="btn-satellite" class="toggle-btn">Satellite</button>
+            </div>
+
+            <!-- Legend -->
+            <div>
+                <div class="legend-title">Risk Designation</div>
+                
+                <div class="legend-item">
+                    <span class="color-dot" style="background: var(--color-coastal);"></span>
+                    <span>Coastal Storm (VE)</span>
+                </div>
+                <div class="legend-item">
+                    <span class="color-dot" style="background: var(--color-high-ae);"></span>
+                    <span>High Risk (Zone AE)</span>
+                </div>
+                <div class="legend-item">
+                    <span class="color-dot" style="background: var(--color-high-a);"></span>
+                    <span>High Risk (Zone A, AH, AO)</span>
+                </div>
+                <div class="legend-item">
+                    <span class="color-dot" style="background: var(--color-moderate);"></span>
+                    <span>Moderate (0.2% / X-Shaded)</span>
+                </div>
+                <div class="legend-item">
+                    <span class="color-dot" style="background: #e5e5ea; border: 1px solid #ccc;"></span>
+                    <span>Minimal Risk</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- COLLAPSE BUTTON (Mobile Only) -->
+        <button id="ui-collapse-btn" class="ui-toggle-btn">
+            <svg class="toggle-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="18 15 12 9 6 15"></polyline>
+            </svg>
+        </button>
+
     </div>
 
     <!-- Map -->
@@ -363,22 +398,19 @@
             style: {
                 version: 8,
                 sources: {
-                    // "Simple" Base Map (CartoDB Positron - Free & Clean)
                     'simple-tiles': {
                         type: 'raster',
                         tiles: ['https://basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'],
                         tileSize: 256,
                         attribution: '&copy; OpenStreetMap &copy; CARTO'
                     },
-                    // "Satellite" Base Map (ESRI World Imagery - Reliable)
-                    // We switched from USGS to Esri to fix the 404 errors
                     'satellite-tiles': {
                         type: 'raster',
                         tiles: [
                             'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
                         ],
                         tileSize: 256,
-                        attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+                        attribution: 'Esri World Imagery'
                     }
                 },
                 layers: [
@@ -399,31 +431,48 @@
             center: [-66.45, 18.22], 
             zoom: 9,
             maxZoom: 18,
-            pitch: 0
+            pitch: 0,
+            attributionControl: false // Move attribution to allow cleaner UI
         });
 
-        // 2. Search Functionality
+        // Add attribution back in a better spot if needed, or keep minimal
+        map.addControl(new maplibregl.AttributionControl({ compact: true }), 'top-right');
+
+        // 2. UI Collapse Logic
+        const uiPanel = document.querySelector('.ui-panel');
+        const collapseBtn = document.getElementById('ui-collapse-btn');
+        const searchInputEl = document.getElementById('search-input');
+
+        // Check if we are on desktop
+        if (window.innerWidth > 600) {
+            uiPanel.classList.remove('is-collapsed');
+        }
+
+        collapseBtn.addEventListener('click', () => {
+            uiPanel.classList.toggle('is-collapsed');
+        });
+
+        // Auto-expand if user taps search input to ensure they see results?
+        // Or keep it collapsed to give keyboard space. Let's keep it user controlled for now.
+        // However, if they hit enter and find a result, we might want to collapse to show the map.
+        
+        // 3. Search Functionality
         let searchResultMarker = null;
-        const searchInput = document.getElementById('search-input');
         const searchButton = document.getElementById('search-button');
         const searchStatus = document.getElementById('search-status');
 
         searchButton.addEventListener('click', performSearch);
-        searchInput.addEventListener('keypress', (event) => {
+        searchInputEl.addEventListener('keypress', (event) => {
             if (event.key === 'Enter') {
                 performSearch();
             }
         });
 
         async function performSearch() {
-            const query = searchInput.value.trim();
-            if (!query) {
-                searchStatus.textContent = 'Please enter a location.';
-                return;
-            }
+            const query = searchInputEl.value.trim();
+            if (!query) return;
 
             searchStatus.textContent = 'Searching...';
-            // Puerto Rico Bounding Box
             const viewbox = '-67.95,18.52,-65.22,17.92'; 
             const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}, Puerto Rico&format=json&limit=1&bounded=1&viewbox=${viewbox}`;
 
@@ -439,6 +488,12 @@
 
                     searchStatus.textContent = `Found: ${result.display_name.split(',')[0]}`;
 
+                    // On Mobile, if we find a result, collapse the panel so user sees the map
+                    if (window.innerWidth <= 600) {
+                        uiPanel.classList.add('is-collapsed');
+                        searchInputEl.blur(); // Hide keyboard
+                    }
+
                     map.flyTo({
                         center: [lon, lat],
                         zoom: 15,
@@ -447,14 +502,13 @@
 
                     if (searchResultMarker) searchResultMarker.remove();
                     
-                    // Custom Marker Element
                     const el = document.createElement('div');
-                    el.style.width = '20px';
-                    el.style.height = '20px';
+                    el.style.width = '24px';
+                    el.style.height = '24px';
                     el.style.borderRadius = '50%';
                     el.style.backgroundColor = '#ff3b30';
                     el.style.border = '3px solid white';
-                    el.style.boxShadow = '0 2px 10px rgba(0,0,0,0.2)';
+                    el.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
 
                     searchResultMarker = new maplibregl.Marker({ element: el })
                         .setLngLat([lon, lat])
@@ -462,26 +516,20 @@
 
                 } else {
                     searchStatus.textContent = 'No results found.';
-                    if (searchResultMarker) {
-                        searchResultMarker.remove();
-                        searchResultMarker = null;
-                    }
                 }
             } catch (error) {
                 searchStatus.textContent = 'Error searching.';
-                console.error(error);
             }
         }
 
-        // 3. Load Flood Data
+        // 4. Load Flood Data
         map.on('load', () => {
-            // LOAD FROM EXTERNAL FILE (Requires local server)
+            // LOAD FROM EXTERNAL FILE
             map.addSource('flood-data', {
                 type: 'geojson',
                 data: 'data/puerto_rico_alto_riesgo_simplified.json' 
             });
 
-            // FILL LAYER
             map.addLayer({
                 'id': 'flood-fill',
                 'type': 'fill',
@@ -499,16 +547,15 @@
                         'X',  [
                                 'case',
                                 ['==', ['get', 'ZONE_SUBTY'], '0.2 PCT ANNUAL CHANCE FLOOD HAZARD'],
-                                '#ffcc00', // Gold/Yellow (Moderate)
-                                'rgba(0,0,0,0)' // Transparent (Minimal)
+                                '#ffcc00', 
+                                'rgba(0,0,0,0)' 
                               ],
-                        '#cccccc' // Default
+                        '#cccccc'
                     ],
                     'fill-opacity': 0.6
                 }
             });
 
-            // OUTLINE LAYER
             map.addLayer({
                 'id': 'flood-line',
                 'type': 'line',
@@ -521,8 +568,7 @@
                 }
             });
 
-            // --- LOADER REMOVAL LOGIC ---
-            // Wait for data to be active before hiding the loader
+            // Loader Logic
             const hideLoader = () => {
                 const loader = document.getElementById('loader');
                 if (loader && !loader.classList.contains('fade-out')) {
@@ -530,63 +576,36 @@
                     setTimeout(() => { loader.style.display = 'none'; }, 500);
                 }
             };
-
-            // Option A: Hide when data starts rendering
             map.once('idle', hideLoader);
-            
-            // Option B: Fallback
             setTimeout(hideLoader, 3000);
         });
 
-        // 4. Popups & Interaction
+        // 5. Popups & Toggles
         map.on('click', 'flood-fill', (e) => {
             const props = e.features[0].properties;
-            
             let riskLevel = "Unknown";
             let color = "#333";
-            const zone = props.FLD_ZONE;
-            const subtype = props.ZONE_SUBTY;
-
-            if(zone === "VE") { 
-                riskLevel = "Coastal Storm High Hazard"; 
-                color = "#af52de"; 
-            }
-            else if (zone === "AE") { 
-                riskLevel = "1% Annual Chance (Detailed)"; 
-                color = "#ff3b30"; 
-            }
-            else if (["A", "AH", "AO"].includes(zone)) { 
-                riskLevel = "1% Annual Chance (Shallow/Approx)"; 
-                color = "#ff9500"; 
-            }
-            else if (subtype === "0.2 PCT ANNUAL CHANCE FLOOD HAZARD") { 
-                riskLevel = "0.2% Annual Chance (Moderate)"; 
-                color = "#ffcc00"; 
-            }
-            else { 
-                riskLevel = "Minimal Flood Hazard"; 
-                color = "#999"; 
-            }
+            
+            if(props.FLD_ZONE === "VE") { riskLevel = "Coastal Storm High Hazard"; color = "#af52de"; }
+            else if (props.FLD_ZONE === "AE") { riskLevel = "1% Annual Chance (Detailed)"; color = "#ff3b30"; }
+            else if (["A", "AH", "AO"].includes(props.FLD_ZONE)) { riskLevel = "1% Annual Chance (Shallow/Approx)"; color = "#ff9500"; }
+            else if (props.ZONE_SUBTY === "0.2 PCT ANNUAL CHANCE FLOOD HAZARD") { riskLevel = "0.2% Annual Chance (Moderate)"; color = "#ffcc00"; }
+            else { riskLevel = "Minimal Flood Hazard"; color = "#999"; }
 
             const description = `
-                <span class="popup-zone" style="color: ${color}">Zone ${zone}</span>
+                <span class="popup-zone" style="color: ${color}">Zone ${props.FLD_ZONE}</span>
                 <div class="popup-desc">
                     <strong>Risk:</strong> ${riskLevel}<br>
-                    ${subtype ? `<strong>Type:</strong> ${subtype}<br>` : ''}
                     ${props.STATIC_BFE && props.STATIC_BFE > -9999 ? `<strong>Elevation:</strong> ${props.STATIC_BFE}ft` : ''}
                 </div>
             `;
 
-            new maplibregl.Popup()
-                .setLngLat(e.lngLat)
-                .setHTML(description)
-                .addTo(map);
+            new maplibregl.Popup().setLngLat(e.lngLat).setHTML(description).addTo(map);
         });
 
         map.on('mouseenter', 'flood-fill', () => map.getCanvas().style.cursor = 'pointer');
         map.on('mouseleave', 'flood-fill', () => map.getCanvas().style.cursor = '');
 
-        // 5. Toggles
         const btnSimple = document.getElementById('btn-simple');
         const btnSatellite = document.getElementById('btn-satellite');
 
@@ -605,7 +624,6 @@
             map.setPaintProperty('satellite-layer', 'raster-opacity', 1);
             if(map.getLayer('flood-fill')) map.setPaintProperty('flood-fill', 'fill-opacity', 0.35);
         };
-
     </script>
 </body>
 </html>
