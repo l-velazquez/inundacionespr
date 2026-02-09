@@ -1,5 +1,7 @@
 # Puerto Rico Flood Hazard Map
 
+![Flood Risk Map of Puerto Rico](flood_risk_map_cristal_puerto_rico.png)
+
 This is an interactive map visualizing flood hazard areas in Puerto Rico.
 
 ## Data Sources
