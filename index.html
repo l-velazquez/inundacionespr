@@ -3,24 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-     <title>Puerto Rico Flood Risk </title>
+    <title>Puerto Rico Flood Risk</title>
 
     <!-- Favicon -->
     <link rel="icon" type="image/x-icon" href="favicon.ico" />
     <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
     <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
-    
+
     <!-- Google Analytics -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-GLQ3KMPLMB"></script>
     <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-
-    gtag('config', 'G-GLQ3KMPLMB');
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-GLQ3KMPLMB');
     </script>
-    
+
     <!-- MapLibre GL JS CSS -->
     <link href='https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css' rel='stylesheet' />
 
@@ -28,295 +27,9 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
-    <style>
-        /* --- SWISS DESIGN SYSTEM --- */
-        :root {
-            /* Risk Colors */
-            --color-coastal: #af52de;  /* Zone VE - Purple */
-            --color-high-ae: #ff3b30;  /* Zone AE - Swiss Red */
-            --color-high-a:  #ff9500;  /* Zone A/AH/AO - Deep Orange */
-            --color-moderate:#ffcc00;  /* 0.2% - Gold/Yellow */
-            --color-minimal: #e5e5ea;  /* Minimal - Grey */
-            
-            /* UI Colors */
-            --swiss-black: #1c1c1e;
-            --swiss-white: #ffffff;
-            --swiss-grey:  #e5e5ea;
-            
-            --ui-shadow: 0 12px 40px rgba(0,0,0,0.12);
-            --font-stack: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-        }
 
-        body, html {
-            margin: 0;
-            padding: 0;
-            height: 100%;
-            width: 100%;
-            font-family: var(--font-stack);
-            color: var(--swiss-black);
-            overflow: hidden;
-            background-color: #f2f2f7;
-        }
-
-        /* --- MAP CONTAINER --- */
-        #map {
-            position: absolute;
-            top: 0;
-            bottom: 0;
-            width: 100%;
-        }
-
-        /* --- FLOATING UI PANEL --- */
-        .ui-panel {
-            position: absolute;
-            top: 24px;
-            left: 24px;
-            width: 340px;
-            background: rgba(255, 255, 255, 0.55);
-            backdrop-filter: blur(15px);
-            padding: 32px;
-            z-index: 10;
-            box-shadow: var(--ui-shadow);
-            border-radius: 10px;
-            display: flex;
-            flex-direction: column;
-            gap: 24px;
-            transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-        }
-
-        h1 {
-            font-size: 18px;
-            font-weight: 700;
-            margin: 0;
-            letter-spacing: -0.02em;
-            text-transform: uppercase;
-        }
-
-        p.subtitle {
-            font-size: 13px;
-            line-height: 1.4;
-            color: #666;
-            margin: 4px 0 0 0;
-            font-weight: 400;
-        }
-
-        /* --- SEARCH BAR --- */
-        .search-container { width: 100%; }
-
-        .search-box {
-            display: flex;
-            align-items: center;
-            border: 1px solid var(--swiss-grey);
-            border-radius: 10px;
-            padding: 4px 8px;
-            transition: border-color 0.5s;
-            background: white;
-        }
-
-        .search-box:focus-within {
-            border-color: var(--swiss-black);
-        }
-
-        #search-input {
-            flex: 1;
-            border: none;
-            outline: none;
-            font-family: var(--font-stack);
-            font-size: 14px;
-            padding: 8px 4px;
-            color: var(--swiss-black);
-            background: transparent;
-        }
-
-        #search-button {
-            background: none;
-            border: none;
-            cursor: pointer;
-            padding: 4px;
-            color: var(--swiss-black);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        #search-status {
-            font-size: 11px;
-            margin-top: 8px;
-            color: #666;
-            font-weight: 500;
-            min-height: 14px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        /* --- COLLAPSIBLE SECTION --- */
-        .ui-details {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            overflow: hidden;
-            transition: max-height 0.4s ease, opacity 0.4s ease;
-            max-height: 500px; /* Arbitrary large number */
-            opacity: 1;
-        }
-
-        /* State: Collapsed */
-        .ui-panel.is-collapsed .ui-details {
-            max-height: 0;
-            opacity: 0;
-            margin: 0; /* Remove gap when hidden */
-        }
-
-        /* --- TOGGLE BUTTON (The Chevron) --- */
-        .ui-toggle-btn {
-            display: none; /* Hidden on desktop by default */
-            width: 100%;
-            padding: 12px 0 0 0;
-            border: none;
-            background: transparent;
-            cursor: pointer;
-            justify-content: center;
-            align-items: center;
-            border-top: 1px solid var(--swiss-grey);
-            margin-top: -10px; /* Pull it up slightly */
-        }
-        
-        .toggle-icon {
-            width: 24px;
-            height: 24px;
-            color: #454444;
-            transition: transform 0.3s ease;
-        }
-
-        .ui-panel.is-collapsed .toggle-icon {
-            transform: rotate(180deg); /* Flip arrow when collapsed */
-        }
-
-        /* --- TOGGLES --- */
-        .toggle-group {
-            display: flex;
-            background: #f2f2f7;
-            padding: 4px;
-            border-radius: 6px;
-        }
-
-        .toggle-btn {
-            flex: 1;
-            border: none;
-            background: transparent;
-            padding: 10px;
-            font-family: var(--font-stack);
-            font-size: 12px;
-            font-weight: 600;
-            cursor: pointer;
-            border-radius: 4px;
-            transition: all 0.2s ease;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-
-        .toggle-btn.active {
-            background: var(--swiss-white);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-        }
-
-        /* --- LEGEND --- */
-        .legend-title {
-            font-size: 11px;
-            text-transform: uppercase;
-            color: #888;
-            margin-bottom: 12px;
-            font-weight: 600;
-            letter-spacing: 0.05em;
-        }
-
-        .legend-item {
-            display: flex;
-            align-items: center;
-            margin-bottom: 10px;
-            font-size: 13px;
-            font-weight: 500;
-        }
-
-        .color-dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 2px;
-            margin-right: 10px;
-            flex-shrink: 0;
-        }
-
-        /* --- POPUP --- */
-        .maplibregl-popup-content {
-            padding: 16px;
-            font-family: var(--font-stack);
-            box-shadow: var(--ui-shadow);
-            border-radius: 4px;
-            max-width: 260px;
-            border: 1px solid #eee;
-        }
-        
-        .popup-zone { font-size: 16px; font-weight: 700; display: block; margin-bottom: 4px; }
-        .popup-desc { font-size: 12px; color: #666; line-height: 1.4; }
-
-        /* --- LOADING SCREEN --- */
-        #loader {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(255, 255, 255, 0.98);
-            z-index: 9999;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            transition: opacity 0.5s ease;
-        }
-
-        .loader-spinner {
-            width: 40px;
-            height: 40px;
-            border: 4px solid var(--swiss-grey);
-            border-top: 4px solid var(--color-high-ae);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 16px;
-        }
-        .loader-text { font-size: 12px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .fade-out { opacity: 0; pointer-events: none; }
-
-        /* --- RESPONSIVE MOBILE --- */
-        @media (max-width: 600px) {
-            .ui-panel {
-                top: auto;
-                bottom: 0;
-                left: 0;
-                width: 100%;
-                /* Remove border radius on bottom corners */
-                border-radius: 12px 12px 0 0; 
-                box-sizing: border-box;
-                padding: 20px 20px 10px 20px; /* Less padding on bottom */
-                gap: 16px;
-            }
-
-            .ui-toggle-btn {
-                display: flex; /* Show the collapse button only on mobile */
-            }
-
-            /* Adjust title size for mobile */
-            h1 { font-size: 16px; }
-            
-            /* Hide subtitle on mobile when collapsed to save even more space */
-            .ui-panel.is-collapsed .subtitle {
-                display: none;
-            }
-        }
-    </style>
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
@@ -327,13 +40,13 @@
     </div>
 
     <!-- UI Panel -->
-    <div class="ui-panel is-collapsed"> <!-- Start collapsed on mobile by default -->
-        
+    <div class="ui-panel is-collapsed">
+
         <!-- HEADER (Always Visible) -->
         <div class="ui-header">
             <h1>Flood Risk PR</h1>
             <p class="subtitle">Interactive visualization of flood hazard areas.</p>
-            
+
             <!-- Search -->
             <div class="search-container">
                 <div class="search-box">
@@ -351,35 +64,70 @@
 
         <!-- DETAILS (Collapsible) -->
         <div class="ui-details">
-            <!-- Toggles -->
+            <!-- Basemap toggle -->
             <div class="toggle-group">
                 <button id="btn-simple" class="toggle-btn active">Map</button>
                 <button id="btn-satellite" class="toggle-btn">Satellite</button>
             </div>
 
-            <!-- Legend -->
+            <!-- Color-by toggle -->
             <div>
-                <div class="legend-title">Risk Designation</div>
-                
-                <div class="legend-item">
-                    <span class="color-dot" style="background: var(--color-coastal);"></span>
-                    <span>Coastal Storm (VE)</span>
+                <div class="legend-title">Color by</div>
+                <div class="toggle-group">
+                    <button id="btn-color-risk" class="toggle-btn active">Risk Score</button>
+                    <button id="btn-color-bfe"  class="toggle-btn">Flood Elevation</button>
+                </div>
+            </div>
+
+            <!-- Legend: Risk Score (shown by default) -->
+            <div id="legend-risk">
+                <div class="legend-title">Risk Score (0 – 10)</div>
+                <div class="legend-gradient-bar legend-gradient-risk"></div>
+                <div class="legend-gradient-labels">
+                    <span>Lower</span>
+                    <span>Higher</span>
+                </div>
+                <div class="legend-item" style="margin-top:10px">
+                    <span class="color-dot" style="background:#67000D;"></span>
+                    <span>Tier 5 — Extreme (VE / Floodway)</span>
                 </div>
                 <div class="legend-item">
-                    <span class="color-dot" style="background: var(--color-high-ae);"></span>
-                    <span>High Risk (Zone AE)</span>
+                    <span class="color-dot" style="background:#E31A1C;"></span>
+                    <span>Tier 4 — High (AE, upper A)</span>
                 </div>
                 <div class="legend-item">
-                    <span class="color-dot" style="background: var(--color-high-a);"></span>
-                    <span>High Risk (Zone A, AH, AO)</span>
+                    <span class="color-dot" style="background:#FD8D3C;"></span>
+                    <span>Tier 3 — Elevated (A, AH, AO)</span>
+                </div>
+                <div class="legend-item" style="margin-top:6px">
+                    <span class="color-dot" style="background:#003580; border-radius:2px;"></span>
+                    <span>Floodway corridor (blue outline)</span>
+                </div>
+            </div>
+
+            <!-- Legend: Flood Elevation (hidden by default) -->
+            <div id="legend-bfe" style="display:none">
+                <div class="legend-title">Base Flood Elevation (ft)</div>
+                <div class="legend-gradient-bar legend-gradient-bfe"></div>
+                <div class="legend-gradient-labels">
+                    <span>0.9 ft</span>
+                    <span>14.3 ft</span>
+                </div>
+                <div class="legend-item" style="margin-top:10px">
+                    <span class="color-dot" style="background:#08306b;"></span>
+                    <span>High elevation (&gt;10 ft)</span>
                 </div>
                 <div class="legend-item">
-                    <span class="color-dot" style="background: var(--color-moderate);"></span>
-                    <span>Moderate (0.2% / X-Shaded)</span>
+                    <span class="color-dot" style="background:#4292c6;"></span>
+                    <span>Mid elevation (3 – 10 ft)</span>
                 </div>
                 <div class="legend-item">
-                    <span class="color-dot" style="background: #e5e5ea; border: 1px solid #ccc;"></span>
-                    <span>Minimal Risk</span>
+                    <span class="color-dot" style="background:#deebf7; border:1px solid #ccc;"></span>
+                    <span>Low elevation (&lt;3 ft)</span>
+                </div>
+                <div class="legend-item" style="margin-top:6px">
+                    <span class="color-dot" style="background:#d0d0d0; border:1px solid #ccc;"></span>
+                    <span>No BFE data (47% of zones)</span>
                 </div>
             </div>
         </div>
@@ -399,239 +147,7 @@
     <!-- Libraries -->
     <script src='https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js'></script>
 
-    <script>
-        // 1. Initialize Map
-        const map = new maplibregl.Map({
-            container: 'map',
-            style: {
-                version: 8,
-                sources: {
-                    'simple-tiles': {
-                        type: 'raster',
-                        tiles: ['https://basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'],
-                        tileSize: 256,
-                        attribution: '&copy; OpenStreetMap &copy; CARTO'
-                    },
-                    'satellite-tiles': {
-                        type: 'raster',
-                        tiles: [
-                            'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
-                        ],
-                        tileSize: 256,
-                        attribution: 'Esri World Imagery'
-                    }
-                },
-                layers: [
-                    {
-                        id: 'satellite-layer',
-                        type: 'raster',
-                        source: 'satellite-tiles',
-                        paint: { 'raster-opacity': 0 }
-                    },
-                    {
-                        id: 'simple-layer',
-                        type: 'raster',
-                        source: 'simple-tiles',
-                        paint: { 'raster-opacity': 1 }
-                    }
-                ]
-            },
-            center: [-66.45, 18.22], 
-            zoom: 9,
-            maxZoom: 18,
-            pitch: 0,
-            attributionControl: false // Move attribution to allow cleaner UI
-        });
-
-        // Add attribution back in a better spot if needed, or keep minimal
-        map.addControl(new maplibregl.AttributionControl({ compact: true }), 'top-right');
-
-        // 2. UI Collapse Logic
-        const uiPanel = document.querySelector('.ui-panel');
-        const collapseBtn = document.getElementById('ui-collapse-btn');
-        const searchInputEl = document.getElementById('search-input');
-
-        // Check if we are on desktop
-        if (window.innerWidth > 600) {
-            uiPanel.classList.remove('is-collapsed');
-        }
-
-        collapseBtn.addEventListener('click', () => {
-            uiPanel.classList.toggle('is-collapsed');
-        });
-
-        // Auto-expand if user taps search input to ensure they see results?
-        // Or keep it collapsed to give keyboard space. Let's keep it user controlled for now.
-        // However, if they hit enter and find a result, we might want to collapse to show the map.
-        
-        // 3. Search Functionality
-        let searchResultMarker = null;
-        const searchButton = document.getElementById('search-button');
-        const searchStatus = document.getElementById('search-status');
-
-        searchButton.addEventListener('click', performSearch);
-        searchInputEl.addEventListener('keypress', (event) => {
-            if (event.key === 'Enter') {
-                performSearch();
-            }
-        });
-
-        async function performSearch() {
-            const query = searchInputEl.value.trim();
-            if (!query) return;
-
-            searchStatus.textContent = 'Searching...';
-            const viewbox = '-67.95,18.52,-65.22,17.92'; 
-            const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}, Puerto Rico&format=json&limit=1&bounded=1&viewbox=${viewbox}`;
-
-            try {
-                const response = await fetch(url);
-                if (!response.ok) throw new Error('Network error');
-                const data = await response.json();
-
-                if (data && data.length > 0) {
-                    const result = data[0];
-                    const lat = parseFloat(result.lat);
-                    const lon = parseFloat(result.lon);
-
-                    searchStatus.textContent = `Found: ${result.display_name.split(',')[0]}`;
-
-                    // On Mobile, if we find a result, collapse the panel so user sees the map
-                    if (window.innerWidth <= 600) {
-                        uiPanel.classList.add('is-collapsed');
-                        searchInputEl.blur(); // Hide keyboard
-                    }
-
-                    map.flyTo({
-                        center: [lon, lat],
-                        zoom: 15,
-                        essential: true
-                    });
-
-                    if (searchResultMarker) searchResultMarker.remove();
-                    
-                    const el = document.createElement('div');
-                    el.style.width = '24px';
-                    el.style.height = '24px';
-                    el.style.borderRadius = '50%';
-                    el.style.backgroundColor = '#ff3b30';
-                    el.style.border = '3px solid white';
-                    el.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
-
-                    searchResultMarker = new maplibregl.Marker({ element: el })
-                        .setLngLat([lon, lat])
-                        .addTo(map);
-
-                } else {
-                    searchStatus.textContent = 'No results found.';
-                }
-            } catch (error) {
-                searchStatus.textContent = 'Error searching.';
-            }
-        }
-
-        // 4. Load Flood Data
-        map.on('load', () => {
-            // LOAD FROM EXTERNAL FILE
-            map.addSource('flood-data', {
-                type: 'geojson',
-                data: 'data/puerto_rico_alto_riesgo_simplified.json' 
-            });
-
-            map.addLayer({
-                'id': 'flood-fill',
-                'type': 'fill',
-                'source': 'flood-data',
-                'layout': {},
-                'paint': {
-                    'fill-color': [
-                        'match',
-                        ['get', 'FLD_ZONE'],
-                        'VE', '#af52de', // Purple (Coastal)
-                        'AE', '#ff3b30', // Red (Detailed High Risk)
-                        'A',  '#ff9500', // Orange (Approx High Risk)
-                        'AH', '#ff9500', // Orange (Shallow)
-                        'AO', '#ff9500', // Orange (Shallow)
-                        'X',  [
-                                'case',
-                                ['==', ['get', 'ZONE_SUBTY'], '0.2 PCT ANNUAL CHANCE FLOOD HAZARD'],
-                                '#ffcc00', 
-                                'rgba(0,0,0,0)' 
-                              ],
-                        '#cccccc'
-                    ],
-                    'fill-opacity': 0.6
-                }
-            });
-
-            map.addLayer({
-                'id': 'flood-line',
-                'type': 'line',
-                'source': 'flood-data',
-                'layout': {},
-                'paint': {
-                    'line-color': '#000000',
-                    'line-width': 0.5,
-                    'line-opacity': 0.15
-                }
-            });
-
-            // Loader Logic
-            const hideLoader = () => {
-                const loader = document.getElementById('loader');
-                if (loader && !loader.classList.contains('fade-out')) {
-                    loader.classList.add('fade-out');
-                    setTimeout(() => { loader.style.display = 'none'; }, 500);
-                }
-            };
-            map.once('idle', hideLoader);
-            setTimeout(hideLoader, 3000);
-        });
-
-        // 5. Popups & Toggles
-        map.on('click', 'flood-fill', (e) => {
-            const props = e.features[0].properties;
-            let riskLevel = "Unknown";
-            let color = "#333";
-            
-            if(props.FLD_ZONE === "VE") { riskLevel = "Coastal Storm High Hazard"; color = "#af52de"; }
-            else if (props.FLD_ZONE === "AE") { riskLevel = "1% Annual Chance (Detailed)"; color = "#ff3b30"; }
-            else if (["A", "AH", "AO"].includes(props.FLD_ZONE)) { riskLevel = "1% Annual Chance (Shallow/Approx)"; color = "#ff9500"; }
-            else if (props.ZONE_SUBTY === "0.2 PCT ANNUAL CHANCE FLOOD HAZARD") { riskLevel = "0.2% Annual Chance (Moderate)"; color = "#ffcc00"; }
-            else { riskLevel = "Minimal Flood Hazard"; color = "#999"; }
-
-            const description = `
-                <span class="popup-zone" style="color: ${color}">Zone ${props.FLD_ZONE}</span>
-                <div class="popup-desc">
-                    <strong>Risk:</strong> ${riskLevel}<br>
-                    ${props.STATIC_BFE && props.STATIC_BFE > -9999 ? `<strong>Elevation:</strong> ${props.STATIC_BFE}ft` : ''}
-                </div>
-            `;
-
-            new maplibregl.Popup().setLngLat(e.lngLat).setHTML(description).addTo(map);
-        });
-
-        map.on('mouseenter', 'flood-fill', () => map.getCanvas().style.cursor = 'pointer');
-        map.on('mouseleave', 'flood-fill', () => map.getCanvas().style.cursor = '');
-
-        const btnSimple = document.getElementById('btn-simple');
-        const btnSatellite = document.getElementById('btn-satellite');
-
-        btnSimple.onclick = () => {
-            btnSimple.classList.add('active');
-            btnSatellite.classList.remove('active');
-            map.setPaintProperty('simple-layer', 'raster-opacity', 1);
-            map.setPaintProperty('satellite-layer', 'raster-opacity', 0);
-            if(map.getLayer('flood-fill')) map.setPaintProperty('flood-fill', 'fill-opacity', 0.6);
-        };
-
-        btnSatellite.onclick = () => {
-            btnSatellite.classList.add('active');
-            btnSimple.classList.remove('active');
-            map.setPaintProperty('simple-layer', 'raster-opacity', 0);
-            map.setPaintProperty('satellite-layer', 'raster-opacity', 1);
-            if(map.getLayer('flood-fill')) map.setPaintProperty('flood-fill', 'fill-opacity', 0.35);
-        };
-    </script>
+    <!-- App JavaScript -->
+    <script src="app.js"></script>
 </body>
 </html>
