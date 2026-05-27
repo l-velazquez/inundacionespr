@@ -19,14 +19,18 @@ const GRADIENT_STOPS = [
 ];
 
 // BFE gradient stops (feet); range in dataset: 0.9–14.3 ft
+// Low BFE = flood surface barely above sea level = most dangerous → warm colors
+// High BFE = flood surface high above sea level = less immediate sea-rise risk → cool colors
 const BFE_GRADIENT_STOPS = [
-    [0.9,  '#deebf7'],
-    [3.0,  '#9ecae1'],
-    [6.0,  '#4292c6'],
-    [10.0, '#08519c'],
-    [14.3, '#08306b'],
+    [0.9,  '#7f0000'],   // near sea level — extreme danger
+    [2.0,  '#d73027'],   // very low
+    [3.5,  '#f46d43'],   // low (near dataset mean of 3.3 ft)
+    [5.0,  '#fdae61'],   // moderate-low
+    [7.0,  '#74add1'],   // moderate-high
+    [10.0, '#313695'],   // high elevation
+    [14.3, '#1a1a2e'],   // highest recorded
 ];
-const BFE_NO_DATA_COLOR = '#d0d0d0';
+const BFE_NO_DATA_COLOR = '#b0b0b0';
 
 // Flat fallback colors (used in popups)
 const TIER_COLORS = {
@@ -111,6 +115,20 @@ function buildBfeExpr() {
             ...BFE_GRADIENT_STOPS.flatMap(([s, c]) => [s, c])
         ],
         BFE_NO_DATA_COLOR
+    ];
+}
+
+// In BFE mode, opacity encodes zone severity so VE/floodway stays prominent
+function buildBfeOpacityExpr(baseSatellite) {
+    const base = baseSatellite ? 0.55 : 0.75;
+    return [
+        'match', ['get', 'FLD_ZONE'],
+        'VE',  base,
+        'AE',  base - 0.08,
+        'AO',  base - 0.15,
+        'AH',  base - 0.15,
+        'A',   base - 0.2,
+        base - 0.25
     ];
 }
 
@@ -303,9 +321,12 @@ function initColorToggle() {
 
     function setMode(mode) {
         colorMode = mode;
-        const expr = mode === 'bfe' ? buildBfeExpr() : buildRiskExpr();
+        const isSatellite = document.getElementById('btn-satellite').classList.contains('active');
         if (map.getLayer('flood-fill')) {
-            map.setPaintProperty('flood-fill', 'fill-color', expr);
+            map.setPaintProperty('flood-fill', 'fill-color',
+                mode === 'bfe' ? buildBfeExpr() : buildRiskExpr());
+            map.setPaintProperty('flood-fill', 'fill-opacity',
+                mode === 'bfe' ? buildBfeOpacityExpr(isSatellite) : (isSatellite ? 0.4 : 0.65));
         }
         btnRisk.classList.toggle('active', mode === 'risk');
         btnBfe.classList.toggle('active',  mode === 'bfe');
@@ -341,7 +362,10 @@ function initUI() {
         btnSatellite.classList.remove('active');
         map.setPaintProperty('simple-layer', 'raster-opacity', 1);
         map.setPaintProperty('satellite-layer', 'raster-opacity', 0);
-        if (map.getLayer('flood-fill'))    map.setPaintProperty('flood-fill', 'fill-opacity', 0.65);
+        if (map.getLayer('flood-fill')) {
+            map.setPaintProperty('flood-fill', 'fill-opacity',
+                colorMode === 'bfe' ? buildBfeOpacityExpr(false) : 0.65);
+        }
         if (map.getLayer('flood-floodway')) map.setPaintProperty('flood-floodway', 'line-opacity', 0.85);
     };
 
@@ -350,7 +374,10 @@ function initUI() {
         btnSimple.classList.remove('active');
         map.setPaintProperty('simple-layer', 'raster-opacity', 0);
         map.setPaintProperty('satellite-layer', 'raster-opacity', 1);
-        if (map.getLayer('flood-fill'))    map.setPaintProperty('flood-fill', 'fill-opacity', 0.4);
+        if (map.getLayer('flood-fill')) {
+            map.setPaintProperty('flood-fill', 'fill-opacity',
+                colorMode === 'bfe' ? buildBfeOpacityExpr(true) : 0.4);
+        }
         if (map.getLayer('flood-floodway')) map.setPaintProperty('flood-floodway', 'line-opacity', 0.9);
     };
 }

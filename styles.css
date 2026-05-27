@@ -210,7 +210,7 @@ p.subtitle {
 }
 
 .legend-gradient-bfe {
-    background: linear-gradient(to right, #deebf7, #9ecae1, #4292c6, #08519c, #08306b);
+    background: linear-gradient(to right, #7f0000, #d73027, #f46d43, #fdae61, #74add1, #313695, #1a1a2e);
 }
 
 .legend-gradient-labels {
